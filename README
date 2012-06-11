@@ -1,0 +1,11 @@
+CEquiEnergy:	Class for equi-energy sampler
+CModel:		Base class for all probability distribution models
+CTransitionModel:	Base class for all proposal distribution models
+CUniformModel:	Derived from CModel, for uniform distribution
+CSimpleGaussianModel:	Derived from CModel, for Gaussian distribution where variables on different dimensions are uncorrelated
+CBoundedModel:	Derived from CModel, for equi-energy sampler, where at each energy level the target distribution function is p_i(x) = exp(-h_i(x)) with h_i(x) = max(h(x), H_i)/T_i
+CTransitionModel_SimpleGaussian:	Derived from CTransitionModel and CSimpleGaussianModel when the proposal distribution is Gaussian.
+CMixtureModel:	Derived from CModel, for mixture models
+
+constant.h:	constants independent of applications, including, e.g., EPSILON
+equi_energy_setup_constant.h:	application specific constants, including K (number of energy levels), B (burn-in period), N (period to build the initial energy rings), 
