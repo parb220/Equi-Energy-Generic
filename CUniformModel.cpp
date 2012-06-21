@@ -1,6 +1,7 @@
 #include <cmath>
+#include <cstring>
 #include <gsl/gsl_rng.h> 
-#include "CUniformModel.h"
+#include "../include/CUniformModel.h"
 
 using namespace std; 
 
@@ -15,11 +16,13 @@ CUniformModel::CUniformModel(int nD, const double *a, const double *b):CModel(nD
 	lower_bound = new double[nData]; 
 	upper_bound = new double[nData]; 
 
-	for (int i=0; i<nData; i++)
+	memcpy(lower_bound, a, nData*sizeof(double)); 
+	memcpy(upper_bound, b, nData*sizeof(double));
+	/*for (int i=0; i<nData; i++)
 	{
 		lower_bound[i] = a[i]; 
 		upper_bound[i] = b[i]; 
-	}
+	}*/
 }
 
 CUniformModel::CUniformModel(const vector <double> &a, const vector <double> &b):CModel((int)(a.size()), 2*(int)(a.size()))
@@ -44,52 +47,58 @@ CUniformModel::~CUniformModel()
 
 void CUniformModel::SetLowerBoundParameter(const double *a, int nD)
 {
-	if (sizeof(lower_bound) != nD)
+	if (nData < nD)
 	{
 		if (sizeof(lower_bound) > 0)
 			delete [] lower_bound; 
-		SetDataDimension(nD); 
-		lower_bound = new double[nData];
+		lower_bound = new double[nD];
 	}
+	SetDataDimension(nD); 
+	memcpy(lower_bound, a, sizeof(double)*nData); 
+	/*
 	for (int i=0; i<nData; i++)
 		lower_bound[i] = a[i]; 
+	*/
 }
 
 void CUniformModel::SetLowerBoundParameter(const vector < double > &a)
 {
-	if (sizeof(lower_bound) != a.size())
+	if (nData < a.size())
 	{
         	if (sizeof(lower_bound) > 0)
                 	delete [] lower_bound;
-        	SetDataDimension((int)(a.size())); 
-        	lower_bound = new double[nData];
+        	lower_bound = new double[a.size()];
 	}
+       	SetDataDimension((int)(a.size())); 
         for (int i=0; i<nData; i++)
                 lower_bound[i] = a[i]; 
 }
 
 void CUniformModel::SetUpperBoundParameter(const double *b, int nD)
 {
-	if (sizeof(upper_bound) != nD)
+	if (nData < nD)
 	{
 		if (sizeof(upper_bound) > 0)
 			delete[] upper_bound; 
-		SetDataDimension(nD); 
-		upper_bound = new double[nData];
+		upper_bound = new double[nD];
 	}
+	SetDataDimension(nD); 
+	memcpy(upper_bound, b, nData*sizeof(double)); 
+	/*
 	for (int i=0; i<nData; i++)
 		upper_bound[i] = b[i]; 
+	*/
 }
 
 void CUniformModel::SetUpperBoundParameter(const vector <double> &b)
 {
-        if (sizeof(upper_bound) != b.size())
+        if (nData < b.size())
 	{
 		if (sizeof(upper_bound) > 0)
                 	delete[] upper_bound;
-        	SetDataDimension((int)(b.size())); 
+        	upper_bound = new double[b.size()];
 	}
-        upper_bound = new double[nData];
+       	SetDataDimension((int)(b.size())); 
         for (int i=0; i<nData; i++)
                 upper_bound[i] = b[i]; 
 }

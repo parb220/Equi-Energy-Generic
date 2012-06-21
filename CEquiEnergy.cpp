@@ -2,9 +2,9 @@
 #include <cmath>
 #include <fstream>
 #include <gsl/gsl_poly.h>
-#include "constant.h"
-#include "CBoundedModel.h"
-#include "CEquiEnergy.h"
+#include "../include/constant.h"
+#include "../include/CBoundedModel.h"
+#include "../include/CEquiEnergy.h"
 
 
 using namespace std; 
@@ -62,10 +62,17 @@ void CEquiEnergy::SetTargetDistribution_EnergyLevels()
 
 void CEquiEnergy::SetNumberEnergyLevels(int nEnergyLevels)
 {
-	K = nEnergyLevels; 
-	H = new double [K]; 
-	T = new double [K]; 
+	if (K < nEnergyLevels)
+	{
+		if (sizeof(H))
+			delete [] H; 
+		H = new double [nEnergyLevels]; 
+		if (sizeof(T)) 
+			delete [] T; 
+		T = new double [nEnergyLevels]; 
+	}
 	
+	K = nEnergyLevels; 
 	sample.resize(K);
         energy_index.resize(K);
         ring.resize(K);

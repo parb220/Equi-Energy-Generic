@@ -15,15 +15,15 @@
 #include <ctime>
 #include <cmath>
 #include <gsl/gsl_rng.h>
-#include "constant.h"
-#include "equi_energy_setup_constant.h"
-#include "CMixtureModel.h"
-#include "CSimpleGaussianModel.h"
-#include "CEquiEnergy.h"
-#include "CUniformModel.h"
-#include "CBoundedModel.h"
-#include "CTransitionModel.h"
-#include "CTransitionModel_SimpleGaussian.h"
+#include "../include/constant.h"
+#include "../include/equi_energy_setup_constant.h"
+#include "../include/CMixtureModel.h"
+#include "../include/CSimpleGaussianModel.h"
+#include "../include/CEquiEnergy.h"
+#include "../include/CUniformModel.h"
+#include "../include/CBoundedModel.h"
+#include "../include/CTransitionModel.h"
+#include "../include/CTransitionModel_SimpleGaussian.h"
 
 using namespace std;
 

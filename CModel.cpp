@@ -1,6 +1,7 @@
 #include <vector>
-#include "CModel.h"
-#include "CTransitionModel.h"
+#include <cstring>
+#include "../include/CModel.h"
+#include "../include/CTransitionModel.h"
 
 using namespace std;
 
@@ -10,8 +11,11 @@ int CModel::draw(CTransitionModel *transition_model, double *y, int dY, const do
 		return -1; 
 
 	double *x_hold = new double [nData]; 
+	memcpy(x_hold, x, nData*sizeof(double)); 
+	/*
 	for (int d=0; d<nData; d++)
 		x_hold[d] = x[d]; 
+	*/
 
 	double ratio; 
 	double uniform_draw; 

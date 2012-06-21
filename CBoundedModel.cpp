@@ -1,5 +1,5 @@
 #include <cmath>
-#include "CBoundedModel.h"
+#include "../include/CBoundedModel.h"
 
 CBoundedModel::CBoundedModel(double h, double t, CModel* original) : CModel(original->GetDataDimension(), original->GetParameterNumber()+2)
 {
@@ -8,6 +8,15 @@ CBoundedModel::CBoundedModel(double h, double t, CModel* original) : CModel(orig
 	OriginalModel = original;
 }
 
+void CBoundedModel::SetH(double h)
+{
+	H= h; 
+}
+
+void CBoundedModel::SetT(double t)
+{
+	T= t; 
+}
 double CBoundedModel::energy(const double* x, int dX)
 {
 	// max(original_energy, H)

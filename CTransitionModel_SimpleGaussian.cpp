@@ -1,5 +1,5 @@
 #include <gsl/gsl_rng.h>
-#include "CTransitionModel_SimpleGaussian.h"
+#include "../include/CTransitionModel_SimpleGaussian.h"
 
 double CTransitionModel_SimpleGaussian::probability(const double *x, const double *y, int dim)
 {

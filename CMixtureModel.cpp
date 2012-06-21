@@ -1,5 +1,5 @@
 #include <cmath>
-#include "CMixtureModel.h"
+#include "../include/CMixtureModel.h"
 
 CMixtureModel::CMixtureModel(int nD, int nP, int nM, double *w):CModel(nD, nP) 
 {
@@ -40,13 +40,13 @@ void CMixtureModel::Initialize(int i, CModel *pModel)
 
 int CMixtureModel::SetWeightParameter(const double *w, int dM)
 {
-	if (sizeof(weight) != dM)
+	if (nModel < dM)
 	{
 		if (sizeof(weight))
 			delete [] weight; 
-		nModel = dM; 
-		weight = new double [nModel]; 
+		weight = new double [dM]; 
 	}
+	nModel = dM; 
 	for (int i=0; i<nModel; i++)
 		weight[i] = w[i]; 
 	return nModel;
@@ -54,13 +54,13 @@ int CMixtureModel::SetWeightParameter(const double *w, int dM)
 
 int CMixtureModel::SetWeightParameter(const vector < double > &w)
 {
-        if (sizeof(weight) != w.size())
+        if (nModel < w.size())
         {
                 if (sizeof(weight))
                         delete [] weight;
-                nModel = (int)(w.size());
-                weight = new double [nModel];
+        	weight = new double [w.size()];
         }
+        nModel = (int)(w.size());
         for (int i=0; i<nModel; i++)
                 weight[i] = w[i]; 
         return nModel;
@@ -68,9 +68,17 @@ int CMixtureModel::SetWeightParameter(const vector < double > &w)
 
 void CMixtureModel::SetModelNumber(int nM)
 {
+	if (nModel < nM)
+	{
+		if (sizeof(weight) )
+		{
+			delete [] weight; 
+			delete [] model;
+		}
+		model = new CModel* [nM]; 
+		weight = new double [nM];
+	} 
 	nModel = nM; 
-	model = new CModel* [nModel]; 
-	weight = new double [nModel]; 
 }
 
 double CMixtureModel::probability(const double *x, int dim)

@@ -1,7 +1,7 @@
 #include <cmath>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
-#include "CSimpleGaussianModel.h"
+#include "../include/CSimpleGaussianModel.h"
 
 CSimpleGaussianModel::CSimpleGaussianModel(int dim):CModel(dim, 2*dim)
 {
@@ -42,52 +42,52 @@ CSimpleGaussianModel::~CSimpleGaussianModel()
 
 void CSimpleGaussianModel::SetMeanParameter(const double *m, int dim)
 {
-	if (sizeof(mu) != dim)
+	if (nData < dim)
 	{
-		SetDataDimension(dim); 
 		if (sizeof(mu))
 			delete [] mu; 
-		mu = new double [nData];
+		mu = new double [dim];
 	} 
+	SetDataDimension(dim); 
 	for (int i=0; i<nData; i++)
 		mu[i] = m[i];
 }
 
 void CSimpleGaussianModel::SetMeanParameter(const vector <double> &m)
 {
-	if (sizeof(mu) != m.size())
+	if (nData < m.size())
 	{
-		SetDataDimension((int)(m.size()));
 		if (sizeof(mu))
 			delete [] mu; 
-		mu = new double [nData];
+		mu = new double [m.size()];
 	}
+	SetDataDimension((int)(m.size()));
 	for (int i=0; i<nData; i++)
 		mu[i] = m[i]; 
 }
 
 void CSimpleGaussianModel::SetSigmaParameter(const double *s, int dim)
 {
-	if (sizeof(s) != dim)
+	if (nData != dim)
 	{
-		SetDataDimension(dim); 
 		if (sizeof(sigma))
 			delete [] sigma; 
-		sigma = new double [nData];
+		sigma = new double [dim];
 	} 
+	SetDataDimension(dim); 
 	for (int i=0; i<nData; i++)
 		sigma[i] = s[i];
 }
 
 void CSimpleGaussianModel::SetSigmaParameter(const vector < double > &s)
 {
-	if (sizeof(s) != s.size())
+	if (nData < s.size())
 	{
-		SetDataDimension((int)(s.size())); 
 		if (sizeof(sigma) )
 			delete [] sigma; 
-		sigma = new double [nData];
+		sigma = new double [s.size()];
 	}
+	SetDataDimension((int)(s.size())); 
 	for (int i=0; i<nData; i++)
 		sigma[i] = s[i]; 
 }
