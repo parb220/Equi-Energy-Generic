@@ -54,7 +54,7 @@ int CMixtureModel::SetWeightParameter(const double *w, int dM)
 
 int CMixtureModel::SetWeightParameter(const vector < double > &w)
 {
-        if (nModel < w.size())
+        if (nModel < (int)(w.size()))
         {
                 if (sizeof(weight))
                         delete [] weight;

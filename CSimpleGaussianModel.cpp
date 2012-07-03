@@ -55,7 +55,7 @@ void CSimpleGaussianModel::SetMeanParameter(const double *m, int dim)
 
 void CSimpleGaussianModel::SetMeanParameter(const vector <double> &m)
 {
-	if (nData < m.size())
+	if (nData < (int)(m.size()))
 	{
 		if (sizeof(mu))
 			delete [] mu; 
@@ -81,7 +81,7 @@ void CSimpleGaussianModel::SetSigmaParameter(const double *s, int dim)
 
 void CSimpleGaussianModel::SetSigmaParameter(const vector < double > &s)
 {
-	if (nData < s.size())
+	if (nData < (int)(s.size()))
 	{
 		if (sizeof(sigma) )
 			delete [] sigma; 

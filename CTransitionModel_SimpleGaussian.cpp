@@ -29,3 +29,11 @@ vector < double > CTransitionModel_SimpleGaussian::draw(const vector < double> &
 	CSimpleGaussianModel::SetMeanParameter(x); 
 	return CSimpleGaussianModel::draw(r);
 }
+
+void CTransitionModel_SimpleGaussian::step_size_tune(double ratio)
+// rate < 1: decrease step size ==> decrease sigma
+// rate > 1: increase step size ==> increase sigma
+{
+	for (int i=0; i<nData; i++)
+		sigma[i]=sigma[i]*ratio; 
+}

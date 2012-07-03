@@ -63,7 +63,7 @@ void CUniformModel::SetLowerBoundParameter(const double *a, int nD)
 
 void CUniformModel::SetLowerBoundParameter(const vector < double > &a)
 {
-	if (nData < a.size())
+	if (nData < (int)(a.size()))
 	{
         	if (sizeof(lower_bound) > 0)
                 	delete [] lower_bound;
@@ -92,7 +92,7 @@ void CUniformModel::SetUpperBoundParameter(const double *b, int nD)
 
 void CUniformModel::SetUpperBoundParameter(const vector <double> &b)
 {
-        if (nData < b.size())
+        if (nData < (int)(b.size()))
 	{
 		if (sizeof(upper_bound) > 0)
                 	delete[] upper_bound;
