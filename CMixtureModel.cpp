@@ -83,8 +83,8 @@ void CMixtureModel::SetModelNumber(int nM)
 
 double CMixtureModel::probability(const double *x, int dim)
 {
-	if (dim < nData)
-		return -1; 
+	/*if (dim < nData)
+		return -1; */
 	double prob = 0.0; 
 	for ( int i=0; i<nModel; i++)
 		prob += weight[i]*model[i]->probability(x, dim); 
@@ -93,8 +93,8 @@ double CMixtureModel::probability(const double *x, int dim)
 
 double CMixtureModel::probability(const vector <double> &x)
 {
-        if ((int)(x.size()) < nData)
-                return -1;
+        /* if ((int)(x.size()) < nData)
+                return -1; */
         double prob = 0.0;
         for ( int i=0; i<nModel; i++)
                 prob += weight[i]*model[i]->probability(x);

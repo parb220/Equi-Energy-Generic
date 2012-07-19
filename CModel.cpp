@@ -1,5 +1,6 @@
 #include <vector>
 #include <cstring>
+#include <cmath>
 #include "../include/CModel.h"
 #include "../include/CTransitionModel.h"
 
@@ -7,8 +8,8 @@ using namespace std;
 
 int CModel::draw(CTransitionModel *transition_model, double *y, int dY, const double *x, const gsl_rng *r, bool &new_sample_flag, int B)
 {
-	if (dY < nData)
-		return -1; 
+	/*if (dY < nData)
+		return -1; */
 
 	double *x_hold = new double [nData]; 
 	memcpy(x_hold, x, nData*sizeof(double)); 
@@ -23,11 +24,14 @@ int CModel::draw(CTransitionModel *transition_model, double *y, int dY, const do
 	for (int n=0; n<=B; n++)
 	{
 		transition_model->draw(y, dY, x_hold, r); 
-		ratio = probability(y, nData)/probability(x_hold, nData); 
-		ratio = ratio * transition_model->probability(y, x_hold, nData)/transition_model->probability(x_hold, y, nData); 
+		/*ratio = probability(y, nData)/probability(x_hold, nData); 
+		ratio = ratio * transition_model->probability(y, x_hold, nData)/transition_model->probability(x_hold, y, nData); */ 
+		// need to use logprobability for precision
+		ratio = log_prob(y, nData)-log_prob(x_hold, nData); 
+		ratio = ratio + transition_model->log_prob(y, x_hold, nData) - transition_model->log_prob(x_hold, y, nData); 
 
 		uniform_draw = gsl_rng_uniform(r); 
-		if (uniform_draw <= ratio)
+		if (log(uniform_draw) <= ratio)
 		{
 			for (int d=0; d<nData; d++)
 				x_hold[d] = y[d]; 

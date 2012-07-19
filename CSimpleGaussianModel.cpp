@@ -94,8 +94,8 @@ void CSimpleGaussianModel::SetSigmaParameter(const vector < double > &s)
 
 double CSimpleGaussianModel::probability(const double *x, int dim)
 {
-	if (dim < nData)
-		return -1.0; 
+/*	if (dim < nData)
+		return -1.0; */
 	double prob = 1.0; 
 	for (int i=0; i<nData; i++)
 		prob = prob * gsl_ran_gaussian_pdf(x[i]-mu[i], sigma[i]); 
@@ -112,12 +112,18 @@ double CSimpleGaussianModel::probability(const vector <double> &x)
 
 double CSimpleGaussianModel::log_prob(const double *x, int dim)
 {
-	return log(probability(x, dim)); 
+	double logP = 0.0; 
+	for (int i=0; i<nData; i++)
+		logP += log(gsl_ran_gaussian_pdf(x[i]-mu[i], sigma[i])); 
+	return logP;
 }
 
 double CSimpleGaussianModel::log_prob(const vector < double > &x)
 {
-	return log(probability(x)); 
+	double logP = 0.0; 
+	for (int i=0; i<(int)(x.size()); i++)
+		logP += log(gsl_ran_gaussian_pdf(x[i]-mu[i], sigma[i])); 
+	return logP;
 }
 
 double CSimpleGaussianModel::energy(const double *x, int dim)
@@ -132,8 +138,8 @@ double CSimpleGaussianModel::energy(const vector < double > &x)
 
 int CSimpleGaussianModel::draw(double *x, int dim, const gsl_rng *r)
 {
-	if (dim < nData)
-		return -1; 
+/*	if (dim < nData)
+		return -1; */
 
 	for (int i=0; i<nData; i++)
 		x[i] = mu[i] + gsl_ran_gaussian(r, sigma[i]);

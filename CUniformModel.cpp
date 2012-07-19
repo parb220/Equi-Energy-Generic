@@ -105,8 +105,8 @@ void CUniformModel::SetUpperBoundParameter(const vector <double> &b)
 
 double CUniformModel::probability(const double *x, int nX)
 {
-	if (nX < nData)
-		return -1.0; 
+	/*if (nX < nData)
+		return -1.0; */
 	double prob=1.0; 
 	for (int i=0; i<nData; i++)
 	{
@@ -151,8 +151,8 @@ double CUniformModel::energy(const vector <double> &x)
 
 int CUniformModel::draw(double *x, int nX, const gsl_rng *r)
 {
-	if (nX < nData)
-		return -1; 
+	/*if (nX < nData)
+		return -1; */
 	for (int i=0; i<nData; i++)
 		x[i] = gsl_rng_uniform(r)*(upper_bound[i]-lower_bound[i])+lower_bound[i]; 
 	return nData; 
