@@ -1,4 +1,5 @@
 #include <cmath>
+#include <cfloat>
 #include <cstring>
 #include <gsl/gsl_rng.h> 
 #include "../include/CUniformModel.h"
@@ -103,50 +104,32 @@ void CUniformModel::SetUpperBoundParameter(const vector <double> &b)
                 upper_bound[i] = b[i]; 
 }
 
-double CUniformModel::probability(const double *x, int nX)
+double CUniformModel::log_prob(const double *x, int nX)
 {
-	/*if (nX < nData)
-		return -1.0; */
-	double prob=1.0; 
-	for (int i=0; i<nData; i++)
-	{
-		if (x[i]<lower_bound[i] || x[i]>upper_bound[i])
-			return 0; 
-		prob = prob/(upper_bound[i]-lower_bound[i]); 
-	}	
-	return prob; 
-}
-
-double CUniformModel::probability(const vector <double> &x)
-{
-	double prob = 1.0; 
+	// return log(probability(x,nX)); 
+	double logP = 0; 
 	for (int i=0; i<nData; i++)
 	{
 		if (x[i] < lower_bound[i] || x[i] > upper_bound[i])
-			return 0; 
-		prob = prob / (upper_bound[i] - lower_bound[i]); 
+			return DBL_MIN_EXP; 
+		else 
+			logP -= log(upper_bound[i]-lower_bound[i]); 
 	}
-	return prob; 
-}
-
-double CUniformModel::log_prob(const double *x, int nX)
-{
-	return log(probability(x,nX)); 
+	return logP; 
 }
 
 double CUniformModel::log_prob(const vector <double> &x)
 {
-	return log(probability(x)); 
-}
-
-double CUniformModel::energy(const double *x, int nX)
-{
-	return -log(probability(x,nX)); 
-}
-
-double CUniformModel::energy(const vector <double> &x)
-{
-	return -log(probability(x)); 
+	// return log(probability(x)); 
+	double logP = 0;
+        for (int i=0; i<nData; i++)
+        {
+                if (x[i] < lower_bound[i] || x[i] > upper_bound[i])
+                        return DBL_MIN_EXP;
+                else 
+			logP -= log(upper_bound[i]-lower_bound[i]);
+        }
+        return logP;
 }
 
 int CUniformModel::draw(double *x, int nX, const gsl_rng *r)

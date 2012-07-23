@@ -1,5 +1,6 @@
 #include <cmath>
-#include "../include/CMixtureModel.h"
+#include "CMixtureModel.h"
+#include "AddScaledLogs.h"
 
 CMixtureModel::CMixtureModel(int nD, int nP, int nM, double *w):CModel(nD, nP) 
 {
@@ -81,44 +82,22 @@ void CMixtureModel::SetModelNumber(int nM)
 	nModel = nM; 
 }
 
-double CMixtureModel::probability(const double *x, int dim)
-{
-	/*if (dim < nData)
-		return -1; */
-	double prob = 0.0; 
-	for ( int i=0; i<nModel; i++)
-		prob += weight[i]*model[i]->probability(x, dim); 
-	return prob;
-}
-
-double CMixtureModel::probability(const vector <double> &x)
-{
-        /* if ((int)(x.size()) < nData)
-                return -1; */
-        double prob = 0.0;
-        for ( int i=0; i<nModel; i++)
-                prob += weight[i]*model[i]->probability(x);
-        return prob;
-}
-
 double CMixtureModel::log_prob(const double *x, int dim)
 {
-	return log(probability(x, dim)); 
+	// return log(probability(x, dim)); 
+	double logP = log(weight[0]) + model[0]->log_prob(x, dim); 
+	for (int i=1; i<nModel; i++)
+		logP = AddScaledLogs(1.0, logP, weight[i], model[i]->log_prob(x, dim)); 	
+	return logP; 
 }
 
 double CMixtureModel::log_prob(const vector <double> &x)
 {
-	return log(probability(x)); 
-}
-
-double CMixtureModel::energy(const double *x, int dim)
-{
-	return -log(probability(x, dim)); 
-}
-
-double CMixtureModel::energy(const vector <double > &x)
-{
-	return -log(probability(x)); 
+	//return log(probability(x)); 
+	double logP = log(weight[0]) + model[0]->log_prob(x); 
+	for (int i=1; i<nModel; i++)
+		logP = AddScaledLogs(1.0, logP, weight[i], model[i]->log_prob(x)); 
+	return logP; 
 }
 
 int CMixtureModel::draw(double *x, int dim, const gsl_rng *r)

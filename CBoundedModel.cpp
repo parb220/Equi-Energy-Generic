@@ -21,7 +21,8 @@ double CBoundedModel::energy(const double* x, int dX)
 {
 	// max(original_energy, H)
 	double original_energy = OriginalModel->energy(x, dX); 
-	if (original_energy >= H) 
+	
+	if (original_energy >= H ) 
 		return original_energy/T; 
 	else 
 		return H/T; 
@@ -34,17 +35,6 @@ double CBoundedModel::energy(const vector <double> &x)
 		return original_energy/T; 
 	else
 		return H/T; 
-}
-
-double CBoundedModel::probability(const double *x, int dX)
-{
-	// prob = exp(-energy)
-	return exp(-energy(x, dX)); 
-}
-
-double CBoundedModel::probability(const vector <double> &x)
-{
-	return exp(-energy(x)); 
 }
 
 double CBoundedModel::log_prob(const double *x, int dX)

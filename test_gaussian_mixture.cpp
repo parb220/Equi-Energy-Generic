@@ -15,7 +15,6 @@
 #include <ctime>
 #include <cmath>
 #include <gsl/gsl_rng.h>
-#include "../include/constant.h"
 #include "../include/equi_energy_setup_constant.h"
 #include "../include/CMixtureModel.h"
 #include "../include/CSimpleGaussianModel.h"

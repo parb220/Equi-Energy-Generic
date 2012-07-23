@@ -1,5 +1,5 @@
-SOURCES = CEquiEnergy.cpp CMixtureModel.cpp CModel.cpp CSimpleGaussianModel.cpp CTransitionModel_SimpleGaussian.cpp CUniformModel.cpp CBoundedModel.cpp test_gaussian_mixture.cpp
-OBJS = $(SOURCES: .cpp = .o)
+SOURCES = CEquiEnergy.cpp CMixtureModel.cpp CModel.cpp CSimpleGaussianModel.cpp CTransitionModel_SimpleGaussian.cpp CUniformModel.cpp CBoundedModel.cpp test_gaussian_mixture.cpp AddScaledLogs.cpp
+OBJS = CEquiEnergy.o CMixtureModel.o CModel.o CSimpleGaussianModel.o CTransitionModel_SimpleGaussian.o CUniformModel.o CBoundedModel.o test_gaussian_mixture.o AddScaledLogs.o
 EXECUTABLE = test_gaussian_mixture
 
 CPP = gcc

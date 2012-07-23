@@ -1,8 +1,8 @@
 #include <ctime>
 #include <cmath>
 #include <fstream>
+#include <cfloat>
 #include <gsl/gsl_poly.h>
-#include "../include/constant.h"
 #include "../include/CBoundedModel.h"
 #include "../include/CEquiEnergy.h"
 
@@ -255,7 +255,7 @@ bool CEquiEnergy::SetEnergyLevels_GeometricProgression(double H0, double HK_1)
 	bool continue_flag = true; 
 	for (int i=0; i<K-1 && continue_flag; i++)
 	{
-		if (Z[2*i]>0 && abs(Z[2*i+1]) <= EPSILON)
+		if (Z[2*i]>0 && abs(Z[2*i+1]) <= DBL_EPSILON)
 		{
 			gamma = Z[2*i]; 
 			continue_flag = false; 
@@ -375,10 +375,13 @@ void CEquiEnergy::BurnIn(const gsl_rng *r, CTransitionModel * const *proposal_mo
 					if (uniform_draw <= pee)
 					{
 						x = RandomGetSample(i+1, GetLastSample_RingIndex(i), r); 
-						double ratio= bounded_target[i]->probability(x)/bounded_target[i+1]->probability(x); 
-						ratio = ratio * bounded_target[i+1]->probability(current_x)/bounded_target[i]->probability(current_x); 
+						// double ratio= bounded_target[i]->probability(x)/bounded_target[i+1]->probability(x); 
+						// ratio = ratio * bounded_target[i+1]->probability(current_x)/bounded_target[i]->probability(current_x); 
+						double ratio = bounded_target[i]->log_prob(x) - bounded_target[i+1]->log_prob(x); 
+						ratio += bounded_target[i+1]->log_prob(current_x) -bounded_target[i]->log_prob(current_x); 
+
 						double another_uniform_draw = gsl_rng_uniform(r); 
-						if (another_uniform_draw <= ratio)
+						if (log(another_uniform_draw) <= ratio)
 							AddSample(i, x, GetLastSample_RingIndex(i)); 
 						else 
 							AddSample(i, current_x, GetLastSample_RingIndex(i)); 
@@ -428,8 +431,10 @@ void CEquiEnergy::Advance(const gsl_rng *r, int simulationL, CTransitionModel * 
 				if (uniform_draw <= pee)
 				{
 					x = RandomGetSample(i+1, GetLastSample_RingIndex(i), r);
-					double ratio= bounded_target[i]->probability(x)/bounded_target[i+1]->probability(x);
-					ratio = ratio * bounded_target[i+1]->probability(current_x)/bounded_target[i]->probability(current_x);
+					// double ratio= bounded_target[i]->probability(x)/bounded_target[i+1]->probability(x);
+					// ratio = ratio * bounded_target[i+1]->probability(current_x)/bounded_target[i]->probability(current_x);
+					double ratio = bounded_target[i]->log_prob(x)-bounded_target[i+1]->log_prob(x); 
+					ratio += bounded_target[i+1]->log_prob(current_x)-bounded_target[i]->log_prob(current_x); 
 					double another_uniform_draw = gsl_rng_uniform(r); 
 					if (another_uniform_draw <= ratio)
 						AddSample(i, x, GetLastSample_RingIndex(i)); 

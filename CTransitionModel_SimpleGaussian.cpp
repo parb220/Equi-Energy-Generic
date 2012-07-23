@@ -1,19 +1,7 @@
 #include <gsl/gsl_rng.h>
-#include "../include/CTransitionModel_SimpleGaussian.h"
-
-double CTransitionModel_SimpleGaussian::probability(const double *x, const double *y, int dim)
-{
-	/*if (dim < nData)
-		return -1.0; */
-	CSimpleGaussianModel::SetMeanParameter(x, nData);
-	return CSimpleGaussianModel::probability(y, nData); 	
-}
-
-double CTransitionModel_SimpleGaussian::probability(const vector < double > &x, const vector < double > &y)
-{
-	CSimpleGaussianModel::SetMeanParameter(x); 
-	return CSimpleGaussianModel::probability(y); 
-}
+#include <cfloat>
+#include <cmath>
+#include "CTransitionModel_SimpleGaussian.h"
 
 double CTransitionModel_SimpleGaussian::log_prob(const double *x, const double *y, int dim)
 {
