@@ -56,22 +56,25 @@ int CModel::draw(CTransitionModel *transition_model, double *y, int dY, const do
 		n++; 
 	}
 	memcpy(y, multiY+n*nData, nData*sizeof(double)); 
+	delete [] multiY; 
+	delete [] multiW; 
 	
 	// draw (B-1) samples based on y and calculat their weights
-	double *multiX = new double[nData*B]; 
-	double *multiWX = new double[B]; 
 	double log_alpha_X = 0; 		// log_alpha_X = log(\sum_i exp(WX_i)) 
-	
-	for (int n=0; n<B; n++)
+	log_alpha_X = log_prob(x_hold, nData); 
+	if (B > 0)
 	{
-		transition_model->draw(multiX+n*nData, nData, y, r); 
-		multiWX[n] = log_prob(multiX+n*nData, nData); 
-		if (n == 0)
-			log_alpha_X = multiWX[n]; 
-		else
+		double *multiX = new double[nData*B]; 
+		double *multiWX = new double[B]; 
+		for (int n=0; n<B; n++)
+		{
+			transition_model->draw(multiX+n*nData, nData, y, r); 
+			multiWX[n] = log_prob(multiX+n*nData, nData); 
 			log_alpha_X = AddScaledLogs(1.0, log_alpha_X, 1.0, multiWX[n]); 
+		}
+		delete [] multiX; 
+		delete [] multiWX;
 	}
-	log_alpha_X = AddScaledLogs(1.0, log_alpha_X, 1.0, log_prob(x_hold, nData)); 
 
 	// Accept Y 
 	double log_ratio = log_alpha - log_alpha_X; 
@@ -84,10 +87,6 @@ int CModel::draw(CTransitionModel *transition_model, double *y, int dY, const do
 		memcpy(y, x_hold, nData*sizeof(double)); 
 	}
 	delete [] x_hold;
-	delete [] multiY; 
-	delete [] multiW; 
-	delete [] multiX; 
-	delete [] multiWX;
 	return nData; 
 }
 
