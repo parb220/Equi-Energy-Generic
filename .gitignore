@@ -1,0 +1,6 @@
+*.o
+*.[0-9]
+*.mean
+*.sigma
+*.weight
+test_gaussian_mixture
