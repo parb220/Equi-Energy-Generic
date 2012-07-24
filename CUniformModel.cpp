@@ -132,19 +132,25 @@ double CUniformModel::log_prob(const vector <double> &x)
         return logP;
 }
 
-int CUniformModel::draw(double *x, int nX, const gsl_rng *r)
+int CUniformModel::draw(double *x, int nX, const gsl_rng *r, const double *old_x, int B)
 {
 	/*if (nX < nData)
 		return -1; */
-	for (int i=0; i<nData; i++)
-		x[i] = gsl_rng_uniform(r)*(upper_bound[i]-lower_bound[i])+lower_bound[i]; 
+	for (int n=0; n<=B; n++)
+	{
+		for (int i=0; i<nData; i++)
+			x[i] = gsl_rng_uniform(r)*(upper_bound[i]-lower_bound[i])+lower_bound[i]; 
+	}
 	return nData; 
 }
 
-vector < double > CUniformModel::draw(const gsl_rng *r)
+vector < double > CUniformModel::draw(const gsl_rng *r, const vector<double> &old_x, int B)
 {
 	vector <double> x(nData); 
-	for (int i=0; i<nData; i++)
-		x[i] = gsl_rng_uniform(r)*(upper_bound[i]-lower_bound[i])+lower_bound[i]; 
+	for (int n=0; n<=B; n++)
+	{
+		for (int i=0; i<nData; i++)
+			x[i] = gsl_rng_uniform(r)*(upper_bound[i]-lower_bound[i])+lower_bound[i]; 
+	}
 	return x;
 }

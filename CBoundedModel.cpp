@@ -48,12 +48,14 @@ double CBoundedModel::log_prob(const vector <double> &x)
 	return -energy(x); 
 }
 
-int CBoundedModel::draw(double *x, int dX, const gsl_rng *r)
+int CBoundedModel::draw(double *x, int dX, const gsl_rng *r, const double *old_x, int B)
 {
-	return 0;
+	int result = OriginalModel->draw(x, dX, r, old_x, B); 
+	return result;
 }
 
-vector <double> CBoundedModel::draw(const gsl_rng *r)
+vector <double> CBoundedModel::draw(const gsl_rng *r, const vector<double> &old_x, int B)
 {
-	return vector<double>(0);
+	vector <double> y = OriginalModel->draw(r, old_x, B); 
+	return y; 
 }

@@ -29,65 +29,74 @@ double CModel::energy(const vector < double > &x)
 // Multiiple-try Metropolis
 int CModel::draw(CTransitionModel *transition_model, double *y, int dY, const double *x, const gsl_rng *r, bool &new_sample_flag, int B)
 {
-	double *x_hold = new double [nData]; 
-	memcpy(x_hold, x, nData*sizeof(double)); 
-
-	double *multiY = new double [nData*(B+1)];	// B new samples 
-	double *multiW = new double [B+1]; 	// B weights, w = log_prob(y); 
-	double log_alpha = 0; 			// log_alpha = log(\sum_i exp(w_i))
-
-	// draw B new samples based on x_hold, and calculat their weights
-	for (int n=0; n<=B; n++)
+	if (transition_model == NULL)
 	{
-		transition_model->draw(multiY+n*nData, dY, x_hold, r); 
-		multiW[n] = log_prob(multiY+n*nData, nData); 
-		if (n == 0)
-			log_alpha = multiW[n]; 
-		else 
-			log_alpha = AddScaledLogs(1.0, log_alpha, 1.0, multiW[n]); 
+		int result = draw(y, dY, r, x, B);
+		new_sample_flag = true;  
+		return result; 
 	}
-	// Select one from the B samples with probability proportional to exp(multiW); 
-	double log_uniform_draw = log(gsl_rng_uniform(r));
-	double partial_sum = multiW[0]; 
-	int n=0; 
-	while (n<B && log_uniform_draw > partial_sum -log_alpha)
-	{
-		partial_sum = AddScaledLogs(1.0, partial_sum, 1.0, multiW[n+1]);
-		n++; 
-	}
-	memcpy(y, multiY+n*nData, nData*sizeof(double)); 
-	delete [] multiY; 
-	delete [] multiW; 
-	
-	// draw (B-1) samples based on y and calculat their weights
-	double log_alpha_X = 0; 		// log_alpha_X = log(\sum_i exp(WX_i)) 
-	log_alpha_X = log_prob(x_hold, nData); 
-	if (B > 0)
-	{
-		double *multiX = new double[nData*B]; 
-		double *multiWX = new double[B]; 
-		for (int n=0; n<B; n++)
-		{
-			transition_model->draw(multiX+n*nData, nData, y, r); 
-			multiWX[n] = log_prob(multiX+n*nData, nData); 
-			log_alpha_X = AddScaledLogs(1.0, log_alpha_X, 1.0, multiWX[n]); 
-		}
-		delete [] multiX; 
-		delete [] multiWX;
-	}
-
-	// Accept Y 
-	double log_ratio = log_alpha - log_alpha_X; 
-	log_uniform_draw = log(gsl_rng_uniform(r)); 
-	if (log_uniform_draw <= log_ratio)
-		new_sample_flag = true;
 	else 
 	{
-		new_sample_flag = false; 
-		memcpy(y, x_hold, nData*sizeof(double)); 
+		double *x_hold = new double [nData]; 
+		memcpy(x_hold, x, nData*sizeof(double)); 
+
+		double *multiY = new double [nData*(B+1)];	// B new samples 
+		double *multiW = new double [B+1]; 	// B weights, w = log_prob(y); 
+		double log_alpha = 0; 			// log_alpha = log(\sum_i exp(w_i))
+
+		// draw B new samples based on x_hold, and calculat their weights
+		for (int n=0; n<=B; n++)
+		{
+			transition_model->draw(multiY+n*nData, dY, x_hold, r); 
+			multiW[n] = log_prob(multiY+n*nData, nData); 
+			if (n == 0)
+				log_alpha = multiW[n]; 
+			else 
+				log_alpha = AddScaledLogs(1.0, log_alpha, 1.0, multiW[n]); 
+		}
+		// Select one from the B samples with probability proportional to exp(multiW); 
+		double log_uniform_draw = log(gsl_rng_uniform(r));
+		double partial_sum = multiW[0]; 
+		int n=0; 
+		while (n<B && log_uniform_draw > partial_sum -log_alpha)
+		{
+			partial_sum = AddScaledLogs(1.0, partial_sum, 1.0, multiW[n+1]);
+			n++; 
+		}
+		memcpy(y, multiY+n*nData, nData*sizeof(double)); 
+		delete [] multiY; 
+		delete [] multiW; 
+	
+		// draw (B-1) samples based on y and calculat their weights
+		double log_alpha_X = 0; 		// log_alpha_X = log(\sum_i exp(WX_i)) 
+		log_alpha_X = log_prob(x_hold, nData); 
+		if (B > 0)
+		{
+			double *multiX = new double[nData*B]; 
+			double *multiWX = new double[B]; 
+			for (int n=0; n<B; n++)
+			{
+				transition_model->draw(multiX+n*nData, nData, y, r); 
+				multiWX[n] = log_prob(multiX+n*nData, nData); 
+				log_alpha_X = AddScaledLogs(1.0, log_alpha_X, 1.0, multiWX[n]); 
+			}
+			delete [] multiX; 
+			delete [] multiWX;
+		}
+
+		// Accept Y 
+		double log_ratio = log_alpha - log_alpha_X; 
+		log_uniform_draw = log(gsl_rng_uniform(r)); 
+		if (log_uniform_draw <= log_ratio)
+			new_sample_flag = true;
+		else 
+		{
+			new_sample_flag = false; 
+			memcpy(y, x_hold, nData*sizeof(double)); 
+		}
+		delete [] x_hold;
+		return nData; 
 	}
-	delete [] x_hold;
-	return nData; 
 }
 
 vector < double > CModel::draw(CTransitionModel *transition_model, const vector <double > &x, const gsl_rng *r, bool &new_sample_flag, int B)

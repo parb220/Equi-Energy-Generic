@@ -100,24 +100,32 @@ double CMixtureModel::log_prob(const vector <double> &x)
 	return logP; 
 }
 
-int CMixtureModel::draw(double *x, int dim, const gsl_rng *r)
+int CMixtureModel::draw(double *x, int dim, const gsl_rng *r, const double *old_x , int B)
 {	
-	/*double uniform_draw = gsl_rng_uniform(r); 	
+	double uniform_draw = gsl_rng_uniform(r); 	
 	double lum_sum = 0.0; 
 	for (int i=0; i<nModel-1; i++)
 	{
 		if (lum_sum <= uniform_draw && uniform_draw < lum_sum + weight[i])
-			return model[i]->draw(x, dim, r);
+			return model[i]->draw(x, dim, r, old_x, B);
 		lum_sum += weight[i];
 	}
-	return model[nModel-1]->draw(x, dim, r); 
-	*/ 
-	return 0; 
+	return model[nModel-1]->draw(x, dim, r, old_x, B); 
 }
 
-vector <double> CMixtureModel::draw(const gsl_rng *r)
+vector <double> CMixtureModel::draw(const gsl_rng *r, const vector<double> &x, int B)
 {
-	return vector <double>(0);
+	double *x_array = new double[x.size()];
+	for (int i=0; i<(int)(x.size()); i++)
+		x_array[i] = x[i];  
+	double *y_array = new double[x.size()];
+	draw(y_array, (int)(x.size()), r, x_array, B); 
+	vector <double> y(x.size()); 
+	for (int i=0; i<(int)(y.size()); i++)
+		y[i] = y_array[i]; 
+	delete []y_array;
+	delete []x_array; 
+	return y;	
 }
 
 void CMixtureModel::CalculateSetParameterNumber()

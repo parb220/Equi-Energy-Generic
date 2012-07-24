@@ -116,21 +116,27 @@ double CSimpleGaussianModel::log_prob(const vector < double > &x)
 	return logP;
 }
 
-int CSimpleGaussianModel::draw(double *x, int dim, const gsl_rng *r)
+int CSimpleGaussianModel::draw(double *x, int dim, const gsl_rng *r, const double* old_x, int B)
 {
 /*	if (dim < nData)
 		return -1; */
 
-	for (int i=0; i<nData; i++)
-		x[i] = mu[i] + gsl_ran_gaussian(r, sigma[i]);
+	for (int n=0; n<=B; n++)
+	{
+		for (int i=0; i<nData; i++)
+			x[i] = mu[i] + gsl_ran_gaussian(r, sigma[i]);
+	}
 
 	return nData; 
 }
 
-vector <double> CSimpleGaussianModel::draw(const gsl_rng *r)
+vector <double> CSimpleGaussianModel::draw(const gsl_rng *r, const vector <double> &old_x, int B)
 {
 	vector <double> y(nData); 
-	for (int i=0; i<nData; i++)
-		y[i] = mu[i] + gsl_ran_gaussian(r, sigma[i]); 
+	for (int n=0; n<=B; n++)
+	{
+		for (int i=0; i<nData; i++)
+			y[i] = mu[i] + gsl_ran_gaussian(r, sigma[i]); 
+	}
 	return y; 
 }
