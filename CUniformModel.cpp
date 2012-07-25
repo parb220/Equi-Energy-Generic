@@ -26,17 +26,6 @@ CUniformModel::CUniformModel(int nD, const double *a, const double *b):CModel(nD
 	}*/
 }
 
-CUniformModel::CUniformModel(const vector <double> &a, const vector <double> &b):CModel((int)(a.size()), 2*(int)(a.size()))
-{
-        lower_bound = new double[nData];
-        upper_bound = new double[nData];
-
-        for (int i=0; i<nData; i++)
-        {
-                lower_bound[i] = a[i];
-                upper_bound[i] = b[i];
-        }
-}
 
 CUniformModel::~CUniformModel()
 {
@@ -62,19 +51,6 @@ void CUniformModel::SetLowerBoundParameter(const double *a, int nD)
 	*/
 }
 
-void CUniformModel::SetLowerBoundParameter(const vector < double > &a)
-{
-	if (nData < (int)(a.size()))
-	{
-        	if (sizeof(lower_bound) > 0)
-                	delete [] lower_bound;
-        	lower_bound = new double[a.size()];
-	}
-       	SetDataDimension((int)(a.size())); 
-        for (int i=0; i<nData; i++)
-                lower_bound[i] = a[i]; 
-}
-
 void CUniformModel::SetUpperBoundParameter(const double *b, int nD)
 {
 	if (nData < nD)
@@ -91,19 +67,6 @@ void CUniformModel::SetUpperBoundParameter(const double *b, int nD)
 	*/
 }
 
-void CUniformModel::SetUpperBoundParameter(const vector <double> &b)
-{
-        if (nData < (int)(b.size()))
-	{
-		if (sizeof(upper_bound) > 0)
-                	delete[] upper_bound;
-        	upper_bound = new double[b.size()];
-	}
-       	SetDataDimension((int)(b.size())); 
-        for (int i=0; i<nData; i++)
-                upper_bound[i] = b[i]; 
-}
-
 double CUniformModel::log_prob(const double *x, int nX)
 {
 	// return log(probability(x,nX)); 
@@ -118,21 +81,7 @@ double CUniformModel::log_prob(const double *x, int nX)
 	return logP; 
 }
 
-double CUniformModel::log_prob(const vector <double> &x)
-{
-	// return log(probability(x)); 
-	double logP = 0;
-        for (int i=0; i<nData; i++)
-        {
-                if (x[i] < lower_bound[i] || x[i] > upper_bound[i])
-                        return DBL_MIN_EXP;
-                else 
-			logP -= log(upper_bound[i]-lower_bound[i]);
-        }
-        return logP;
-}
-
-int CUniformModel::draw(double *x, int nX, const gsl_rng *r, const double *old_x, int B)
+double CUniformModel::draw(double *x, int nX, const gsl_rng *r, const double *old_x, int B)
 {
 	/*if (nX < nData)
 		return -1; */
@@ -141,16 +90,5 @@ int CUniformModel::draw(double *x, int nX, const gsl_rng *r, const double *old_x
 		for (int i=0; i<nData; i++)
 			x[i] = gsl_rng_uniform(r)*(upper_bound[i]-lower_bound[i])+lower_bound[i]; 
 	}
-	return nData; 
-}
-
-vector < double > CUniformModel::draw(const gsl_rng *r, const vector<double> &old_x, int B)
-{
-	vector <double> x(nData); 
-	for (int n=0; n<=B; n++)
-	{
-		for (int i=0; i<nData; i++)
-			x[i] = gsl_rng_uniform(r)*(upper_bound[i]-lower_bound[i])+lower_bound[i]; 
-	}
-	return x;
+	return log_prob(x, nData); 
 }

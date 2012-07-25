@@ -329,14 +329,15 @@ void CEquiEnergy::GetLastSample(double *x, int dX) const
 /******************************************************************/
 void CEquiEnergy::Initialize(CModel * const*model, const gsl_rng *r)
 {
-	vector <double > x; 
+	double *x = new double[dataDim]; 
 	double x_energy; 
 	for (int i=0; i<K; i++)
 	{
-		x = model[i]->draw(r); 
-		x_energy = ultimate_target->energy(x); 
-		AddSample(i, x, x_energy);   
+		model[i]->draw(x, dataDim, r); 
+		x_energy = ultimate_target->energy(x, dataDim); 
+		AddSample(i, x, dataDim, x_energy);   
 	}
+	delete []x; 
 }
 
 void CEquiEnergy::BurnIn(const gsl_rng *r, CTransitionModel * const *proposal_model)
@@ -345,7 +346,8 @@ void CEquiEnergy::BurnIn(const gsl_rng *r, CTransitionModel * const *proposal_mo
 	ultimate_target: distribution of interest used to calculate energy of a sample
  	bounded_target: Each energy level has a target distribution from which samples can be drawn
  	*/
-	vector < double > x, current_x; 
+	double *x = new double [dataDim]; 
+	double *current_x = new double[dataDim];
 	bool new_sample_flag;
 	double energy_x;
 	for (int n=0; n<(K-1)*(B+N)+B; n++) 	// Takes (K-1)*(B+N)+B to generate B samples at the 0-th level
@@ -354,18 +356,18 @@ void CEquiEnergy::BurnIn(const gsl_rng *r, CTransitionModel * const *proposal_mo
 		{
 			if (n >= (K-1-i)*(B+N) )
 			{
-				current_x = GetLastSample(i); 
+				GetLastSample(current_x, dataDim, i); 
 				if (i==K-1 || RingEmpty(i+1, GetLastSample_RingIndex(i)) )
 				{
 					// bounded_target->draw(x, dataDim, r);
-					x = bounded_target[i]->draw(proposal_model[i], current_x, r, new_sample_flag); 
+					bounded_target[i]->draw(proposal_model[i], x, dataDim, current_x, r, new_sample_flag); 
 					if (new_sample_flag)
 					{
-						energy_x = ultimate_target->energy(x); 
-						AddSample(i, x, energy_x);
+						energy_x = ultimate_target->energy(x, dataDim); 
+						AddSample(i, x, dataDim, energy_x);
 					}
 					else
-						AddSample(i, current_x, GetLastSample_RingIndex(i));  
+						AddSample(i, current_x, dataDim, GetLastSample_RingIndex(i));  
 				} 
 				else 
 				{
@@ -374,87 +376,92 @@ void CEquiEnergy::BurnIn(const gsl_rng *r, CTransitionModel * const *proposal_mo
 					double uniform_draw = gsl_rng_uniform(r);
 					if (uniform_draw <= pee)
 					{
-						x = RandomGetSample(i+1, GetLastSample_RingIndex(i), r); 
+						RandomGetSample(i+1, GetLastSample_RingIndex(i), x, dataDim, r); 
 						// double ratio= bounded_target[i]->probability(x)/bounded_target[i+1]->probability(x); 
 						// ratio = ratio * bounded_target[i+1]->probability(current_x)/bounded_target[i]->probability(current_x); 
-						double ratio = bounded_target[i]->log_prob(x) - bounded_target[i+1]->log_prob(x); 
-						ratio += bounded_target[i+1]->log_prob(current_x) -bounded_target[i]->log_prob(current_x); 
+						double ratio = bounded_target[i]->log_prob(x, dataDim) - bounded_target[i+1]->log_prob(x, dataDim); 
+						ratio += bounded_target[i+1]->log_prob(current_x, dataDim) -bounded_target[i]->log_prob(current_x, dataDim); 
 
 						double another_uniform_draw = gsl_rng_uniform(r); 
 						if (log(another_uniform_draw) <= ratio)
-							AddSample(i, x, GetLastSample_RingIndex(i)); 
+							AddSample(i, x, dataDim, GetLastSample_RingIndex(i)); 
 						else 
-							AddSample(i, current_x, GetLastSample_RingIndex(i)); 
+							AddSample(i, current_x, dataDim, GetLastSample_RingIndex(i)); 
 					}
 					else 
 					{
 						// target_model[i]->draw(x, dataDim, r); 
-						x = bounded_target[i]->draw(proposal_model[i], current_x, r, new_sample_flag);
+						bounded_target[i]->draw(proposal_model[i], x, dataDim, current_x, r, new_sample_flag);
 						if (new_sample_flag)
 						{ 
-							energy_x = ultimate_target->energy(x); 
-							AddSample(i, x, energy_x);
+							energy_x = ultimate_target->energy(x, dataDim); 
+							AddSample(i, x, dataDim, energy_x);
 						}
 						else 
-							AddSample(i, current_x, GetLastSample_RingIndex(i)); 
+							AddSample(i, current_x, dataDim, GetLastSample_RingIndex(i)); 
 					}
 				}
 			}
 		}
 	}
+	delete []x; 
+	delete []current_x; 
 }
 
 void CEquiEnergy::Advance(const gsl_rng *r, int simulationL, CTransitionModel * const * proposal)
 {
-	vector < double > x, current_x; 
+	double *x = new double [dataDim]; 
+	double *current_x = new double [dataDim]; 
 	double energy_x;
 	bool new_sample_flag; 
 	for (int n=0; n<simulationL; n++)
 	{
 		for (int i=K-1; i>=0; i--)
 		{
-			current_x = GetLastSample(i); 
+			GetLastSample(current_x, dataDim, i); 
 			if (i==K-1 || RingEmpty(i+1, GetLastSample_RingIndex(i)) )
 			{
-				x = bounded_target[i]->draw(proposal[i], current_x, r, new_sample_flag);
+				bounded_target[i]->draw(proposal[i], x, dataDim, current_x, r, new_sample_flag);
 				if (new_sample_flag)
 				{ 
-					energy_x = ultimate_target->energy(x);
-					AddSample(i, x, energy_x); 
+					energy_x = ultimate_target->energy(x, dataDim);
+					AddSample(i, x, dataDim, energy_x); 
 				}
 				else
-					AddSample(i, current_x, GetLastSample_RingIndex(i));
+					AddSample(i, current_x, dataDim, GetLastSample_RingIndex(i));
 			}
 			else 
 			{
 				double uniform_draw = gsl_rng_uniform(r); 
 				if (uniform_draw <= pee)
 				{
-					x = RandomGetSample(i+1, GetLastSample_RingIndex(i), r);
+					RandomGetSample(i+1, GetLastSample_RingIndex(i), x, dataDim, r);
 					// double ratio= bounded_target[i]->probability(x)/bounded_target[i+1]->probability(x);
 					// ratio = ratio * bounded_target[i+1]->probability(current_x)/bounded_target[i]->probability(current_x);
-					double ratio = bounded_target[i]->log_prob(x)-bounded_target[i+1]->log_prob(x); 
-					ratio += bounded_target[i+1]->log_prob(current_x)-bounded_target[i]->log_prob(current_x); 
+					double ratio = bounded_target[i]->log_prob(x, dataDim)-bounded_target[i+1]->log_prob(x, dataDim); 
+					ratio += bounded_target[i+1]->log_prob(current_x, dataDim)-bounded_target[i]->log_prob(current_x, dataDim); 
 					double another_uniform_draw = gsl_rng_uniform(r); 
 					if (another_uniform_draw <= ratio)
-						AddSample(i, x, GetLastSample_RingIndex(i)); 
+						AddSample(i, x, dataDim, GetLastSample_RingIndex(i)); 
 					else 
-						AddSample(i, current_x, GetLastSample_RingIndex(i)); 
+						AddSample(i, current_x, dataDim, GetLastSample_RingIndex(i)); 
 				}
 				else
 				{
-					x = bounded_target[i]->draw(proposal[i], current_x, r, new_sample_flag);
+					bounded_target[i]->draw(proposal[i], x, dataDim, current_x, r, new_sample_flag);
 					if (new_sample_flag)
 					{ 
-						energy_x = ultimate_target->energy(x); 
-						AddSample(i, x, energy_x);
+						energy_x = ultimate_target->energy(x, dataDim); 
+						AddSample(i, x, dataDim, energy_x);
 					}
 					else 
-						AddSample(i, current_x, GetLastSample_RingIndex(i));  
+						AddSample(i, current_x, dataDim, GetLastSample_RingIndex(i));  
 				}
 			}
 		}	
 	}
+	delete []x; 
+	delete []current_x;
 }
 
 int CEquiEnergy::Output_Samples_EnergyLevel_File(int i, string filename)
