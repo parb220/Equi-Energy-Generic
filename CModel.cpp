@@ -17,21 +17,12 @@ double CModel::energy(const double *x, int nX)
 		return -logP;  
 }
 
-double CModel::energy(const vector < double > &x)
-{
-	double logP = log_prob(x); 
-	// if (logP <= DBL_MIN_EXP)
-	// 	return -DBL_MIN_EXP;
-	// else 
-		return -logP; 
-}
-
 // Multiiple-try Metropolis
-int CModel::draw(CTransitionModel *transition_model, double *y, int dY, const double *x, const gsl_rng *r, bool &new_sample_flag, int B)
+double CModel::draw(CTransitionModel *transition_model, double *y, int dY, const double *x, const gsl_rng *r, bool &new_sample_flag, int B)
 {
 	if (transition_model == NULL)
 	{
-		int result = draw(y, dY, r, x, B);
+		double result = draw(y, dY, r, x, B);
 		new_sample_flag = true;  
 		return result; 
 	}
@@ -64,12 +55,13 @@ int CModel::draw(CTransitionModel *transition_model, double *y, int dY, const do
 			n++; 
 		}
 		memcpy(y, multiY+n*nData, nData*sizeof(double)); 
+		double log_prob_y = multiW[n]; 
 		delete [] multiY; 
 		delete [] multiW; 
 	
 		// draw (B-1) samples based on y and calculat their weights
-		double log_alpha_X = 0; 		// log_alpha_X = log(\sum_i exp(WX_i)) 
-		log_alpha_X = log_prob(x_hold, nData); 
+		double log_prob_x = log_prob(x_hold, nData); 
+		double log_alpha_X = log_prob_x; 
 		if (B > 0)
 		{
 			double *multiX = new double[nData*B]; 
@@ -88,31 +80,64 @@ int CModel::draw(CTransitionModel *transition_model, double *y, int dY, const do
 		double log_ratio = log_alpha - log_alpha_X; 
 		log_uniform_draw = log(gsl_rng_uniform(r)); 
 		if (log_uniform_draw <= log_ratio)
+		{
 			new_sample_flag = true;
+			delete [] x_hold;
+			return log_prob_y; 
+		}
 		else 
 		{
 			new_sample_flag = false; 
 			memcpy(y, x_hold, nData*sizeof(double)); 
+			delete [] x_hold;
+			return log_prob_x; 
 		}
-		delete [] x_hold;
-		return nData; 
 	}
 }
 
-vector < double > CModel::draw(CTransitionModel *transition_model, const vector <double > &x, const gsl_rng *r, bool &new_sample_flag, int B)
-{
-	double *localX = new double[x.size()]; 
-	for (int i=0; i<(int)(x.size()); i++)
-		localX[i] = x[i]; 
-	double *localY = new double[x.size()]; 
-	draw(transition_model, localY, (int)(x.size()), localX, r, new_sample_flag, B); 
-	
-	vector <double> y(x.size()); 
-	for (int i=0; i<(int)(x.size()); i++)
-		y[i] = localY[i]; 
 
-	delete [] localX; 
-	delete [] localY;
-	return y;
+double CModel::draw(CTransitionModel **proposal, double *y, int dim, const double *x, const gsl_rng *r, vector <bool> &new_sample_flag, int nBlock, const vector <int> &blockSize)
+{
+	double *x_hold = new double[nData]; 
+	memcpy(x_hold, x, nData*sizeof(double));
+	double log_prob_x = log_prob(x_hold, nData); 
+	
+	double *y_intermediate = new double[nData]; 
+	double log_prob_y, log_prob_intermediate_y;  
+	double log_uniform_draw; 
+	
+	int dim_lum_sum = 0;  
+	memcpy(y, x_hold, nData*sizeof(double)); 
+	log_prob_y = log_prob_x; 
+	for (int iBlock = 0; iBlock<nBlock; iBlock++)
+	{
+		if (proposal[iBlock] == NULL)
+		{
+			draw(y_intermediate, dim, r, x, 0); 
+			// 0:dim_lum_sum-1 and dim_lum_sum+blockSize[iBlock]:dim-1 -- x_hold
+			// dim_lum_sum: dim_lum_sum+blockSize[iBlock]-1 -- y_intermediate; 
+			memcpy(y+dim_lum_sum, y_intermediate+dim_lum_sum, blockSize[iBlock]*sizeof(double)); 
+               		new_sample_flag[iBlock] = true;
+			log_prob_y = log_prob(y,nData); 
+		}
+		else 
+		{
+			memcpy(y_intermediate, y, nData*sizeof(double)); 
+			proposal[iBlock]->draw(y_intermediate+dim_lum_sum, blockSize[iBlock], x_hold+dim_lum_sum, r); 
+			log_prob_intermediate_y = log_prob(y_intermediate,nData); 
+			log_uniform_draw = log(gsl_rng_uniform(r));
+			if (log_uniform_draw <= log_prob_intermediate_y - log_prob_y)
+			{
+				memcpy(y+dim_lum_sum, y_intermediate+dim_lum_sum, blockSize[iBlock]*sizeof(double));
+				new_sample_flag[iBlock] = true; 
+				log_prob_y = log_prob_intermediate_y; 
+			} 
+		}
+		dim_lum_sum += blockSize[iBlock]; 	
+	}
+	
+	delete [] x_hold; 
+	delete [] y_intermediate; 
+	return log_prob_y;
 }
 
