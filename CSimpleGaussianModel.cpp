@@ -85,3 +85,7 @@ double CSimpleGaussianModel::draw(double *x, int dim, const gsl_rng *r, const do
 	return log_prob(x, nData);  
 }
 
+void CSimpleGaussianModel::GetMode(double *x, int nX, int iModel)
+{
+	memcpy(x, mu, nData*sizeof(double)); 
+}

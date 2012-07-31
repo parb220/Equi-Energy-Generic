@@ -40,3 +40,7 @@ double CBoundedModel::draw(double *x, int dX, const gsl_rng *r, const double *ol
 	return result;
 }
 
+void CBoundedModel::GetMode(double *x, int nX, int iMode)
+{
+	OriginalModel->GetMode(x, nX, iMode); 
+}

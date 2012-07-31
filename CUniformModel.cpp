@@ -19,11 +19,6 @@ CUniformModel::CUniformModel(int nD, const double *a, const double *b):CModel(nD
 
 	memcpy(lower_bound, a, nData*sizeof(double)); 
 	memcpy(upper_bound, b, nData*sizeof(double));
-	/*for (int i=0; i<nData; i++)
-	{
-		lower_bound[i] = a[i]; 
-		upper_bound[i] = b[i]; 
-	}*/
 }
 
 
@@ -91,4 +86,12 @@ double CUniformModel::draw(double *x, int nX, const gsl_rng *r, const double *ol
 			x[i] = gsl_rng_uniform(r)*(upper_bound[i]-lower_bound[i])+lower_bound[i]; 
 	}
 	return log_prob(x, nData); 
+}
+
+void CUniformModel::GetMode(double *x, int nX, int iModel)
+{
+	if (iModel == 0)
+		memcpy(x, lower_bound, nData*sizeof(double)); 
+	else 
+		memcpy(x, upper_bound, nData*sizeof(double)); 
 }

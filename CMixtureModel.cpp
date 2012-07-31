@@ -1,4 +1,5 @@
 #include <cmath>
+#include <algorithm>
 #include "CMixtureModel.h"
 #include "AddScaledLogs.h"
 
@@ -100,4 +101,9 @@ void CMixtureModel::CalculateSetParameterNumber()
 	for (int i=0; i<nModel; i++)
 		nP += model[i]->GetParameterNumber(); 
 	nParameter = nP;
+}
+
+void CMixtureModel::GetMode(double *x, int nX, int iMode)
+{
+	model[iMode]->GetMode(x, nX); 	
 }
