@@ -78,7 +78,7 @@ double CModel::draw(CTransitionModel *transition_model, double *y, int dY, const
 
 		// Accept Y 
 		double log_ratio = log_alpha - log_alpha_X; 
-		log_uniform_draw = log(gsl_rng_uniform(r)); 
+		log_uniform_draw = log(gsl_rng_uniform(r));
 		if (log_uniform_draw <= log_ratio)
 		{
 			new_sample_flag = true;
@@ -123,7 +123,7 @@ double CModel::draw(CTransitionModel **proposal, double *y, int dim, const doubl
 		else 
 		{
 			memcpy(y_intermediate, y, nData*sizeof(double)); 
-			proposal[iBlock]->draw(y_intermediate+dim_lum_sum, blockSize[iBlock], x_hold+dim_lum_sum, r); 
+			proposal[iBlock]->draw(y_intermediate+dim_lum_sum, blockSize[iBlock], x_hold+dim_lum_sum, r);
 			log_prob_intermediate_y = log_prob(y_intermediate,nData); 
 			log_uniform_draw = log(gsl_rng_uniform(r));
 			if (log_uniform_draw <= log_prob_intermediate_y - log_prob_y)

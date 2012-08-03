@@ -20,10 +20,16 @@ double CTransitionModel_SimpleGaussian::draw(double *y, int dim, const double *x
 	return result; 
 }
 
-void CTransitionModel_SimpleGaussian::step_size_tune(double ratio)
+void CTransitionModel_SimpleGaussian::tune_step_size(double ratio)
 // rate < 1: decrease step size ==> decrease sigma
 // rate > 1: increase step size ==> increase sigma
 {
 	for (int i=0; i<nData; i++)
 		sigma[i]=sigma[i]*ratio; 
+}
+
+void CTransitionModel_SimpleGaussian::set_step_size(double _s)
+{
+	for (int i=0; i<nData; i++)
+		sigma[i]=_s;
 }
