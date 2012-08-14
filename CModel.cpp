@@ -96,48 +96,114 @@ double CModel::draw(CTransitionModel *transition_model, double *y, int dY, const
 }
 
 
-double CModel::draw(CTransitionModel **proposal, double *y, int dim, const double *x, const gsl_rng *r, vector <bool> &new_sample_flag, int nBlock, const vector <int> &blockSize)
+double CModel::draw(CTransitionModel **proposal, double *y, int dim, const double *x, const gsl_rng *r, vector <bool> &new_sample_flag, int nBlock, const vector <int> &blockSize, int mMH)
 {
+	// most original x_hold 
 	double *x_hold = new double[nData]; 
 	memcpy(x_hold, x, nData*sizeof(double));
 	double log_prob_x = log_prob(x_hold, nData); 
+	// for multiple-try MH
+	double log_prob_intermediate_x; 
+	double *x_intermediate, *w_x_intermediate;
+	if (mMH > 0)
+	{
+		x_intermediate = new double[nData*mMH]; 
+		w_x_intermediate = new double[mMH]; 
+	}
 	
-	double *y_intermediate = new double[nData]; 
-	double log_prob_y, log_prob_intermediate_y;  
+	// multiple-try MH
+	double *y_intermediate = new double[nData*(mMH+1)];
+	double *w_y_intermediate = new double[mMH+1]; 
+	double log_prob_intermediate_y;  
+	
+	double log_prob_y;	// return value
 	double log_uniform_draw; 
 	
 	int dim_lum_sum = 0;  
+
 	memcpy(y, x_hold, nData*sizeof(double)); 
-	log_prob_y = log_prob_x; 
 	for (int iBlock = 0; iBlock<nBlock; iBlock++)
 	{
 		if (proposal[iBlock] == NULL)
 		{
-			draw(y_intermediate, dim, r, x, 0); 
+			draw(y_intermediate, dim, r, x, mMH); 
 			// 0:dim_lum_sum-1 and dim_lum_sum+blockSize[iBlock]:dim-1 -- x_hold
 			// dim_lum_sum: dim_lum_sum+blockSize[iBlock]-1 -- y_intermediate; 
+			// update y; 
 			memcpy(y+dim_lum_sum, y_intermediate+dim_lum_sum, blockSize[iBlock]*sizeof(double)); 
                		new_sample_flag[iBlock] = true;
-			log_prob_y = log_prob(y,nData); 
+			log_prob_y = log_prob(y,nData);
+			// update x_hold
+			memcpy(x_hold+dim_lum_sum, y+dim_lum_sum, blockSize[iBlock]*sizeof(double)); 
+			log_prob_x = log_prob_y; 
 		}
 		else 
 		{
-			memcpy(y_intermediate, y, nData*sizeof(double)); 
-			proposal[iBlock]->draw(y_intermediate+dim_lum_sum, blockSize[iBlock], x_hold+dim_lum_sum, r);
-			log_prob_intermediate_y = log_prob(y_intermediate,nData); 
-			log_uniform_draw = log(gsl_rng_uniform(r));
-			if (log_uniform_draw <= log_prob_intermediate_y - log_prob_y)
+			// Multiple-try MH
+			for (int m=0; m<=mMH; m++)	// Generate mMH+1 y_intermediate
 			{
-				memcpy(y+dim_lum_sum, y_intermediate+dim_lum_sum, blockSize[iBlock]*sizeof(double));
+				memcpy(y_intermediate+m*nData, y, nData*sizeof(double)); 
+				proposal[iBlock]->draw(y_intermediate+m*nData+dim_lum_sum, blockSize[iBlock], x_hold+dim_lum_sum, r);
+				w_y_intermediate[m] = log_prob(y_intermediate+m*nData, nData); 
+				if (m == 0)
+					log_prob_intermediate_y = w_y_intermediate[m]; 
+				else
+					log_prob_intermediate_y = AddScaledLogs(1.0, log_prob_intermediate_y, 1.0, w_y_intermediate[m]);
+			}
+			// Select one from the (mMH+1) y_intermediate with prob. proportional to exp(w_y_intermediate)
+			log_uniform_draw = log(gsl_rng_uniform(r));
+			double partial_sum = w_y_intermediate[0];
+			int m=0;
+			while (m<mMH && log_uniform_draw > partial_sum -log_prob_intermediate_y)
+			{
+				partial_sum = AddScaledLogs(1.0, partial_sum, 1.0, w_y_intermediate[m+1]);
+				m++;
+			}
+			// y to generate intermediate x's.
+			memcpy(y+dim_lum_sum, y_intermediate+m*nData+dim_lum_sum, blockSize[iBlock]*sizeof(double));
+			log_prob_y = w_y_intermediate[m]; 
+			
+			// generate mMH x_intermediate samples from y
+			log_prob_intermediate_x = log_prob_x;  
+			if (mMH > 0)
+			{
+				for (m=0; m<mMH; m++)
+				{
+					memcpy(x_intermediate+m*nData, x_hold, nData*sizeof(double)); 
+					proposal[iBlock]->draw(x_intermediate+m*nData+dim_lum_sum, blockSize[iBlock], y+dim_lum_sum, r); 
+					w_x_intermediate[m] = log_prob(x_intermediate+m*nData, nData); 
+					log_prob_intermediate_x = AddScaledLogs(1.0, log_prob_intermediate_x, 1.0, w_x_intermediate[m]); 
+				}
+			}
+		
+			// Accept y or not	
+			log_uniform_draw = log(gsl_rng_uniform(r));
+			if (log_uniform_draw <= log_prob_intermediate_y - log_prob_intermediate_x)
+			{
 				new_sample_flag[iBlock] = true; 
-				log_prob_y = log_prob_intermediate_y; 
+				// update x_hold
+				memcpy(x_hold+dim_lum_sum, y+dim_lum_sum, blockSize[iBlock]*sizeof(double)); 
+				log_prob_x = log_prob_y; 
 			} 
+			else 
+			{
+				new_sample_flag[iBlock] = false; 
+				// restore y based x_hold
+				memcpy(y+dim_lum_sum, x_hold+dim_lum_sum, blockSize[iBlock]*sizeof(double)); 
+				log_prob_y = log_prob_x; 
+			}
 		}
 		dim_lum_sum += blockSize[iBlock]; 	
 	}
 	
 	delete [] x_hold; 
 	delete [] y_intermediate; 
+	delete [] w_y_intermediate; 
+	if (mMH > 0)
+	{
+		delete [] x_intermediate; 
+		delete [] w_x_intermediate;
+	}
 	return log_prob_y;
 }
 
