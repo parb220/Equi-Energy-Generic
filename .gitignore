@@ -3,4 +3,5 @@
 *.mean
 *.sigma
 *.weight
+*.bak
 test_gaussian_mixture
