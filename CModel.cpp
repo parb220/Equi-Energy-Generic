@@ -20,6 +20,10 @@ double CModel::energy(const double *x, int nX)
 // Multiiple-try Metropolis
 double CModel::draw(CTransitionModel *transition_model, double *y, int dY, const double *x, const gsl_rng *r, bool &new_sample_flag, int B)
 {
+	double log_prob_x = log_prob(x, nData); 
+	double log_prob_y = draw_block(0, nData, transition_model, y, dY, x, log_prob_x, r, new_sample_flag, B); 
+	return log_prob_y; 
+	/*
 	if (transition_model == NULL)
 	{
 		double result = draw(y, dY, r, x, B);
@@ -92,7 +96,7 @@ double CModel::draw(CTransitionModel *transition_model, double *y, int dY, const
 			delete [] x_hold;
 			return log_prob_x; 
 		}
-	}
+	}*/
 }
 
 
@@ -102,6 +106,25 @@ double CModel::draw(CTransitionModel **proposal, double *y, int dim, const doubl
 	double *x_hold = new double[nData]; 
 	memcpy(x_hold, x, nData*sizeof(double));
 	double log_prob_x = log_prob(x_hold, nData); 
+	double log_prob_y; 
+	
+	int dim_lum_sum=0; 
+	bool local_flag; 
+	for (int iBlock=0; iBlock<nBlock; iBlock++)
+	{
+		log_prob_y = draw_block(dim_lum_sum, blockSize[iBlock], proposal[iBlock], y, nData, x_hold, log_prob_x, r, local_flag, mMH); 
+		new_sample_flag[iBlock] = local_flag; 
+		if (local_flag)
+		{
+			memcpy(x_hold+dim_lum_sum, y+dim_lum_sum, blockSize[iBlock]*sizeof(double)); 
+			log_prob_x = log_prob_y; 
+		}
+		dim_lum_sum += blockSize[iBlock]; 
+	}
+	delete [] x_hold; 
+	return log_prob_y; 
+
+	/*	
 	// for multiple-try MH
 	double log_prob_intermediate_x; 
 	double *x_intermediate, *w_x_intermediate;
@@ -204,13 +227,21 @@ double CModel::draw(CTransitionModel **proposal, double *y, int dim, const doubl
 		delete [] x_intermediate; 
 		delete [] w_x_intermediate;
 	}
-	return log_prob_y;
+	return log_prob_y;*/
 }
 
-double CModel::draw_block(int dim_lum_sum, int block_size, CTransitionModel *proposal, double *y, int dim, const double *x, const gsl_rng *r, bool &new_sample_flag, int mMH)
+double CModel::draw_block(int dim_lum_sum, int block_size, CTransitionModel *proposal, double *y, int dim, const double *x, double log_prob_x, const gsl_rng *r, bool &new_sample_flag, int mMH)
 {
-        double log_prob_x = log_prob(x, nData);
-	
+	if (proposal == NULL)
+	{
+		double *intermediate_y = new double[nData]; 
+		draw(intermediate_y, nData, r, x, mMH); 
+		memcpy(y, x, nData*sizeof(double)); 
+		memcpy(y+dim_lum_sum, intermediate_y+dim_lum_sum, block_size*sizeof(double)); 
+		double log_prob_y = log_prob(y, nData); 
+		delete [] intermediate_y; 
+		return log_prob_y; 	
+	}
 	// mMH+1 draw of y based on x
 	double *y_intermediate = new double[nData*(mMH+1)]; 
 	double *w_y_intermediate = new double[mMH+1]; 
@@ -265,7 +296,7 @@ double CModel::draw_block(int dim_lum_sum, int block_size, CTransitionModel *pro
 	else 
 	{
 		new_sample_flag = false; 
-		memcpy(y, x, nData*sizeof(y)); 
+		memcpy(y+dim_lum_sum, x+dim_lum_sum, block_size*sizeof(double)); 
 		log_prob_y = log_prob_x; 
 	}
 	return log_prob_y; 
