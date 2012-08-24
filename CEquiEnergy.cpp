@@ -3,8 +3,8 @@
 #include <fstream>
 #include <cfloat>
 #include <gsl/gsl_poly.h>
-#include "../include/CBoundedModel.h"
-#include "../include/CEquiEnergy.h"
+#include "CBoundedModel.h"
+#include "CEquiEnergy.h"
 
 
 using namespace std; 
@@ -12,8 +12,14 @@ using namespace std;
 CEquiEnergy::CEquiEnergy(int nEnergyLevels, double prob_ee, int burn_in_length, int build_energy_ring_length, int data_dim, CModel *target)
 {
 	K = nEnergyLevels; 
-	H = new double[K]; 
-	T = new double[K]; 
+	if (K>0)
+	{
+		H = new double[K]; 
+		T = new double[K]; 
+		bounded_target = new CModel *[K]; 
+		for (int i=0; i<K; i++)
+			bounded_target[i] = NULL; 
+	}
 	
 	pee = prob_ee; 
 
@@ -28,24 +34,24 @@ CEquiEnergy::CEquiEnergy(int nEnergyLevels, double prob_ee, int burn_in_length, 
 		ring[i].resize(K); 
 
 	ultimate_target = target; 
-	bounded_target = new CModel *[K]; 
 }
 
 CEquiEnergy::~CEquiEnergy()
 {
-	if (sizeof(H) > 0)
+	if (K> 0)
+	{
 		delete [] H; 
-	if (sizeof(T) > 0)
 		delete [] T; 
+		for (int i=0; i<K; i++)
+		{
+			if (bounded_target[i])
+				delete bounded_target[i];
+		}
+		delete []bounded_target;
+	}
 	sample.clear(); 
 	energy_index.clear(); 
 	ring.clear();
-	if (sizeof (bounded_target) > 0)
-	{
-		for (int i=0; i<K; i++)
-			delete bounded_target[i];
-		delete []bounded_target;
-	}
 }
 
 void CEquiEnergy::SetTargetDistribution(CModel *target)
@@ -62,22 +68,32 @@ void CEquiEnergy::SetTargetDistribution_EnergyLevels()
 
 void CEquiEnergy::SetNumberEnergyLevels(int nEnergyLevels)
 {
-	if (K < nEnergyLevels)
+	if (K != nEnergyLevels)
 	{
-		if (sizeof(H))
+		if (K>0)
+		{
 			delete [] H; 
-		H = new double [nEnergyLevels]; 
-		if (sizeof(T)) 
 			delete [] T; 
+			for (int i=0; i<K; i++)
+			{
+				if (bounded_target[i])
+                        		delete bounded_target[i];
+			}
+                	delete []bounded_target;
+		}
+		H = new double [nEnergyLevels]; 
 		T = new double [nEnergyLevels]; 
-	}
+		bounded_target = new CModel *[nEnergyLevels]; 
+		for (int i=0; i<nEnergyLevels; i++)
+			bounded_target[i] = NULL; 		
 	
-	K = nEnergyLevels; 
-	sample.resize(K);
-        energy_index.resize(K);
-        ring.resize(K);
-        for (int i=0; i<K; i++)
-        ring[i].resize(K);
+		K = nEnergyLevels; 
+		sample.resize(K);
+        	energy_index.resize(K);
+        	ring.resize(K);
+        	for (int i=0; i<K; i++)
+        		ring[i].resize(K);
+	}
 }
 
 void CEquiEnergy::SetProbEquiEnergyJump(double prob_ee)

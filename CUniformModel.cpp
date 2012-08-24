@@ -8,36 +8,62 @@ using namespace std;
 
 CUniformModel::CUniformModel(int nD):CModel(nD, nD*2)
 {
-	lower_bound = new double[nData]; 
-	upper_bound = new double[nData]; 
+	if (nData > 0)
+	{
+		lower_bound = new double[nData]; 
+		upper_bound = new double[nData]; 
+	}
+	else 
+	{
+		lower_bound = NULL; 
+		upper_bound = NULL; 
+	}
 }
 
 CUniformModel::CUniformModel(int nD, const double *a, const double *b):CModel(nD, nD*2)
 {
-	lower_bound = new double[nData]; 
-	upper_bound = new double[nData]; 
+	if (nData > 0)
+	{
+		lower_bound = new double[nData]; 
+		upper_bound = new double[nData]; 
 
-	memcpy(lower_bound, a, nData*sizeof(double)); 
-	memcpy(upper_bound, b, nData*sizeof(double));
+		memcpy(lower_bound, a, nData*sizeof(double)); 
+		memcpy(upper_bound, b, nData*sizeof(double));
+	}
+	else 
+	{
+		lower_bound = NULL; 
+		upper_bound = NULL; 
+	}
 }
 
 
 CUniformModel::~CUniformModel()
 {
-	if (sizeof(lower_bound) > 0)
+	if (nData > 0)
+	{
 		delete [] lower_bound; 
-	if (sizeof(upper_bound) > 0)
 		delete [] upper_bound; 
+	}
+}
+
+void CUniformModel::SetDataDimension(int _dim)
+{
+	if (nData != _dim)
+	{
+		if (nData > 0)
+		{
+			delete []lower_bound; 
+			delete []upper_bound; 
+		}
+		lower_bound = new double[_dim]; 
+		upper_bound = new double[_dim]; 
+		nData = _dim; 	
+	}
 }
 
 void CUniformModel::SetLowerBoundParameter(const double *a, int nD)
 {
-	if (nData < nD)
-	{
-		if (sizeof(lower_bound) > 0)
-			delete [] lower_bound; 
-		lower_bound = new double[nD];
-	}
 	SetDataDimension(nD); 
 	memcpy(lower_bound, a, sizeof(double)*nData); 
 	/*
@@ -48,12 +74,6 @@ void CUniformModel::SetLowerBoundParameter(const double *a, int nD)
 
 void CUniformModel::SetUpperBoundParameter(const double *b, int nD)
 {
-	if (nData < nD)
-	{
-		if (sizeof(upper_bound) > 0)
-			delete[] upper_bound; 
-		upper_bound = new double[nD];
-	}
 	SetDataDimension(nD); 
 	memcpy(upper_bound, b, nData*sizeof(double)); 
 	/*

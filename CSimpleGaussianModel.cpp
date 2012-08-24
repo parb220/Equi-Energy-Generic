@@ -7,38 +7,61 @@
 
 CSimpleGaussianModel::CSimpleGaussianModel(int dim):CModel(dim, 2*dim)
 {
-	mu = new double[nData]; 
-	sigma = new double[nData];
+	if (nData > 0)
+	{
+		mu = new double[nData]; 
+		sigma = new double[nData];
+	}
+	else 
+	{
+		mu = NULL; 
+		sigma = NULL; 
+	}
 }
 
 CSimpleGaussianModel::CSimpleGaussianModel(int dim, const double *m, const double *s):CModel(dim, 2*dim)
 {
-	mu = new double[nData]; 
-	sigma = new double[nData]; 
-
-	for (int n=0; n<nData; n++)
+	if (nData > 0)
 	{
-		mu[n] = m[n];
-		sigma[n] = s[n]; 
+		mu = new double[nData]; 
+		sigma = new double[nData]; 
+		memcpy(mu, m, nData*sizeof(double)); 
+		memcpy(sigma, s, nData*sizeof(double)); 
+	}
+	else 
+	{
+		mu = NULL; 
+		sigma = NULL; 
 	}
 }
 
 CSimpleGaussianModel::~CSimpleGaussianModel()
 {
-	if (sizeof(mu))
+	if (nData > 0)
+	{
 		delete[] mu; 
-	if (sizeof(sigma))
 		delete[] sigma; 
+	}
 }
+
+void CSimpleGaussianModel::SetDataDimension(int _dim)
+{
+	if (nData != _dim)
+	{
+		if (nData > 0)
+		{
+			delete [] mu; 
+			delete [] sigma; 
+		}
+		mu = new double[_dim]; 
+		sigma = new double[_dim]; 
+		nData = _dim; 
+	}
+}
+
 
 void CSimpleGaussianModel::SetMeanParameter(const double *m, int dim)
 {
-	if (nData < dim)
-	{
-		if (sizeof(mu))
-			delete [] mu; 
-		mu = new double [dim];
-	} 
 	SetDataDimension(dim);
 	/* 
 	for (int i=0; i<nData; i++)
@@ -48,12 +71,6 @@ void CSimpleGaussianModel::SetMeanParameter(const double *m, int dim)
 
 void CSimpleGaussianModel::SetSigmaParameter(const double *s, int dim)
 {
-	if (nData != dim)
-	{
-		if (sizeof(sigma))
-			delete [] sigma; 
-		sigma = new double [dim];
-	} 
 	SetDataDimension(dim); 
 	
 	/* for (int i=0; i<nData; i++)

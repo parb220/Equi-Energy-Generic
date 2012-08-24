@@ -6,26 +6,33 @@
 CMixtureModel::CMixtureModel(int nD, int nP, int nM, double *w):CModel(nD, nP) 
 {
 	nModel = nM; 
-	model = new CModel*[nModel]; 
-	weight = new double[nModel];
+	if (nModel > 0)
+	{
+		model = new CModel*[nModel]; 
+		weight = new double[nModel];
 
-	for (int i=0; i<nModel; i++)
-		weight[i] = w[i]; 
+		for (int i=0; i<nModel; i++)
+		{
+			model[i] = NULL; 
+			weight[i] = w[i]; 
+		}
+	}
 }
 
 CMixtureModel::~CMixtureModel()
 {
-	if (sizeof(model))
+	if (nModel > 0)
 	{
 		for (int i=0; i<nModel; i++)
 		{
 			if (model[i])
 				delete model[i];
 		}
-		delete []model; 
+		delete [] model; 
+		delete [] weight;
+		model = NULL; 
+		weight = NULL;  
 	}
-	if (sizeof(weight)) 
-		delete [] weight; 
 }
 
 CModel * CMixtureModel::operator [] (int i) const
@@ -42,13 +49,7 @@ void CMixtureModel::Initialize(int i, CModel *pModel)
 
 int CMixtureModel::SetWeightParameter(const double *w, int dM)
 {
-	if (nModel < dM)
-	{
-		if (sizeof(weight))
-			delete [] weight; 
-		weight = new double [dM]; 
-	}
-	nModel = dM; 
+	SetModelNumber(dM); 
 	for (int i=0; i<nModel; i++)
 		weight[i] = w[i]; 
 	return nModel;
@@ -56,17 +57,29 @@ int CMixtureModel::SetWeightParameter(const double *w, int dM)
 
 void CMixtureModel::SetModelNumber(int nM)
 {
-	if (nModel < nM)
+	if (nModel != nM)
 	{
-		if (sizeof(weight) )
+		if (nModel > 0 )
 		{
 			delete [] weight; 
+			weight = NULL; 
+			for (int i=0; i<nModel; i++)
+			{
+				if (model[i])
+					delete model[i]; 
+			}
 			delete [] model;
+			model = NULL; 
 		}
-		model = new CModel* [nM]; 
-		weight = new double [nM];
+		nModel = nM; 
+		if (nModel > 0)
+		{
+			model = new CModel* [nModel]; 
+			weight = new double [nModel];
+			for (int i=0; i<nModel; i++)
+				model[i] = NULL; 
+		}
 	} 
-	nModel = nM; 
 }
 
 double CMixtureModel::log_prob(const double *x, int dim)
