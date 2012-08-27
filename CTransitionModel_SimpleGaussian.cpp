@@ -50,3 +50,52 @@ double CTransitionModel_SimpleGaussian::get_step_size(int _dim)
 	else 
 		return GetSigmaParameter(_dim); 
 }
+
+void CTransitionModel_SimpleGaussian:: Tune(double targetAcc, int LPeriod, int NPeriod, const gsl_rng *r, const CModel *targetModel, const double *xStart, int dX, double logProbStart, int offsetX, int sizeX)
+{
+	for (int offsetP=0; offsetP<sizeX; offsetP++)
+		TuneDimension(targetAcc, LPeriod, NPeriod, r, targetModel, xStart, dX, logProbStart, offsetX+offsetP, offsetP); 
+}
+
+void CTransitionModel_SimpleGaussian:: TuneDimension(double targetAcc, int LPeriod, int NPeriod, const gsl_rng *r, const CModel *targetModel, const double *xStart, int dX, double logProbStart, int offsetX, int offsetP)
+{
+	double initialSigma = this->get_step_size(offsetP); 
+	CTransitionModel *proposal_dimension = new CTransitionModel_SimpleGaussian(1, &initialSigma); 
+	double *x_current = new double[nData]; 
+	double *x_new = new double[nData]; 
+	double log_x_current, log_x_new; 
+	int nAccepted=0; 
+	bool if_new_sample; 
+	MHAdaptive *adaptive = new(targetAcc, initialSigma); 
+	
+	for (int iPeriod=0; iPeriod<NPeriod; iPeriod++)
+	{
+		// always start from xStart
+		memcpy(x_current, xStart, nData*sizeof(double)); 
+		log_x_current = logProbStart; 
+
+		nAccepted = 0; 
+
+		// draw LPeriod times to estimate acceptance rate
+		for (int t=0; t<LPeriod; t++)
+		{
+			log_x_new = targetModel->draw_block(offsetX, 1, proposal_dimension, x_new, nData, if_new_sample, r, x_current, log_x_current); 
+			if (if_new_sample)
+			{
+				nAccepted ++; 
+				log_x_current = log_x_new; 
+				memcpy(x_current+offsetX, x_new+offsetX, sizeof(double)); 
+			}
+		}
+
+		// Tune 
+		if (adaptive->UpdateScale(LPeriod, nAccepted))
+			proposal_dimension->set_step_size(adaptive->GetScale()); 
+	}	
+	this->set_step_size(adaptive->GetBestScale(), offsetP); 
+	delete [] x_current; 
+	delete [] x_new;
+	delete adaptive; 
+	delete proposal_dimension; 
+}
+
