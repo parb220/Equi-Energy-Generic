@@ -9,7 +9,7 @@ double CTransitionModel_SimpleGaussian::log_prob(const double *x, const double *
 	return CSimpleGaussianModel::log_prob(y, nData); 
 }
 
-double CTransitionModel_SimpleGaussian::draw(double *y, int dim, bool &if_new_sample, const double *x, double log_prob_x, const gsl_rng* r, int B)
+double CTransitionModel_SimpleGaussian::draw(double *y, int dY, bool &if_new_sample, const gsl_rng *r, const double *x, double log_prob_x, int B)
 {
 	/*if (dim < nData)
 		return -1; */

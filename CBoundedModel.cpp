@@ -35,22 +35,22 @@ double CBoundedModel::log_prob(const double *x, int dX)
 	return -energy(x,dX); 
 }
 
-double CBoundedModel::draw(double *y, int dY, bool & if_new_sample, const gsl_rng *r, const double *x, double log_prob_x, int B)
+double CBoundedModel::draw(double *y, int dY, bool &if_new_sample, const gsl_rng *r, const double *x, double log_prob_x, int B)
 {
 	double log_prob_y = OriginalModel->draw(y, dY, if_new_sample, r, x, log_prob_x, B);
+	double log_prob_y_bounded = (log_prob_y < -H ? log_prob_y : -H)/T; 
 	if (if_new_sample && x != NULL)
 	{
-		double log_prob_y_bounded = (log_prob_y < -H ? log_prob_y : -H)/T; 
 		double log_prob_x_bounded = (log_prob_x < -H ? log_prob_x : -H)/T; 
-		double log_uniform = gsl_rng_uniform(r); 
+		double log_uniform = log(gsl_rng_uniform(r)); 
 		if (log_uniform > log_prob_y_bounded - log_prob_x_bounded)
 		{
 			if_new_sample = false; 
 			memcpy(y, x, nData*sizeof(double)); 
-			log_prob_y = log_prob_x; 
+			log_prob_y_bounded = log_prob_x_bounded; 
 		}
 	} 
-	return log_prob_y; 
+	return log_prob_y_bounded; 
 }
 
 void CBoundedModel::GetMode(double *x, int nX, int iMode)
