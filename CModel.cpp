@@ -18,9 +18,8 @@ double CModel::energy(const double *x, int nX)
 }
 
 // Multiiple-try Metropolis
-double CModel::draw(CTransitionModel *transition_model, double *y, int dY, const double *x, const gsl_rng *r, bool &new_sample_flag, int B)
+double CModel::draw(CTransitionModel *transition_model, double *y, int dY, const double *x, double log_prob_x, const gsl_rng *r, bool &new_sample_flag, int B)
 {
-	double log_prob_x = log_prob(x, nData); 
 	double log_prob_y = draw_block(0, nData, transition_model, y, dY, x, log_prob_x, r, new_sample_flag, B); 
 	return log_prob_y; 
 	/*
@@ -100,12 +99,11 @@ double CModel::draw(CTransitionModel *transition_model, double *y, int dY, const
 }
 
 
-double CModel::draw(CTransitionModel **proposal, double *y, int dim, const double *x, const gsl_rng *r, vector <bool> &new_sample_flag, int nBlock, const vector <int> &blockSize, int mMH)
+double CModel::draw(CTransitionModel **proposal, double *y, int dim, const double *x, double log_prob_x, const gsl_rng *r, vector <bool> &new_sample_flag, int nBlock, const vector <int> &blockSize, int mMH)
 {
 	// most original x_hold 
 	double *x_hold = new double[nData]; 
 	memcpy(x_hold, x, nData*sizeof(double));
-	double log_prob_x = log_prob(x_hold, nData); 
 	double log_prob_y; 
 	
 	int dim_lum_sum=0; 
@@ -232,13 +230,20 @@ double CModel::draw(CTransitionModel **proposal, double *y, int dim, const doubl
 
 double CModel::draw_block(int dim_lum_sum, int block_size, CTransitionModel *proposal, double *y, int dim, const double *x, double log_prob_x, const gsl_rng *r, bool &new_sample_flag, int mMH)
 {
+	memcpy(y, x, nData*sizeof(double)); 
 	if (proposal == NULL)
 	{
 		double *intermediate_y = new double[nData]; 
-		draw(intermediate_y, nData, r, x, mMH); 
-		memcpy(y, x, nData*sizeof(double)); 
-		memcpy(y+dim_lum_sum, intermediate_y+dim_lum_sum, block_size*sizeof(double)); 
-		double log_prob_y = log_prob(y, nData); 
+		double log_prob_y; 
+		draw(intermediate_y, nData, new_sample_flag, r, x, log_prob_x, mMH); 
+		if (new_sample_flag)
+		{
+			// only updates [dim_lum_sum, dim_lum_sum+block_size)
+			memcpy(y+dim_lum_sum, intermediate_y+dim_lum_sum, block_size*sizeof(double)); 
+			log_prob_y = log_prob(y, nData); 
+		}
+		else 
+			log_prob_y = log_prob_x; 
 		delete [] intermediate_y; 
 		return log_prob_y; 	
 	}
@@ -246,12 +251,17 @@ double CModel::draw_block(int dim_lum_sum, int block_size, CTransitionModel *pro
 	double *y_intermediate = new double[nData*(mMH+1)]; 
 	double *w_y_intermediate = new double[mMH+1]; 
 	double log_prob_intermediate_y =0; 
+	bool local_flag; 
 	
 	for (int iMH=0; iMH <= mMH; iMH++)
 	{
 		memcpy(y_intermediate+iMH*nData, x, nData*sizeof(double)); 
-		proposal->draw(y_intermediate+iMH*nData+dim_lum_sum, block_size, x+dim_lum_sum, r); 
-		w_y_intermediate[iMH] = log_prob(y_intermediate+iMH*nData, nData); 
+		// only draws on [dim_lum_sum, dim_lum_sum+block_size)
+		proposal->draw(y_intermediate+iMH*nData+dim_lum_sum, block_size, local_flag, x+dim_lum_sum, log_prob_x, r);
+		if (local_flag) 
+			w_y_intermediate[iMH] = log_prob(y_intermediate+iMH*nData, nData); 
+		else 
+			w_y_intermediate[iMH] = log_prob_x; 
 		if (iMH == 0)
 			log_prob_intermediate_y = w_y_intermediate[iMH];
                 else
@@ -267,6 +277,7 @@ double CModel::draw_block(int dim_lum_sum, int block_size, CTransitionModel *pro
 		partial_sum = AddScaledLogs(1.0, partial_sum, 1.0, w_y_intermediate[iMH+1]);
 		iMH++;
 	}
+	// only updates on [dim_lum_sum, dim_lum_sum +block_size)
         memcpy(y+dim_lum_sum, y_intermediate+iMH*nData+dim_lum_sum, block_size*sizeof(double));
         double log_prob_y = w_y_intermediate[iMH];
 	delete [] w_y_intermediate; 
@@ -281,8 +292,13 @@ double CModel::draw_block(int dim_lum_sum, int block_size, CTransitionModel *pro
 		for (int iMH=0; iMH<mMH; iMH++)
 		{
 			memcpy(x_intermediate+iMH*nData, x, nData*sizeof(double)); 
-			proposal->draw(x_intermediate+iMH*nData+dim_lum_sum, block_size,  y+dim_lum_sum, r); 
-			w_x_intermediate[iMH] = log_prob(x_intermediate+iMH*nData, nData); 
+			// except for [dim_lum_sum, dim_lum_sum+block_size), the other dimensions 
+			// of y are identical to x and x_intermediate
+			proposal->draw(x_intermediate+iMH*nData+dim_lum_sum, block_size, local_flag, y+dim_lum_sum, log_prob_y, r);
+			if (local_flag) 
+				w_x_intermediate[iMH] = log_prob(x_intermediate+iMH*nData, nData); 
+			else 
+				w_x_intermediate[iMH] = log_prob_y; 
 			log_prob_intermediate_x = AddScaledLogs(1.0, log_prob_intermediate_x, 1.0, w_x_intermediate[iMH]); 
 		}
 		delete [] x_intermediate; 

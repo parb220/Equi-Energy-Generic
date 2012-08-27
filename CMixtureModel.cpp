@@ -91,7 +91,7 @@ double CMixtureModel::log_prob(const double *x, int dim)
 	return logP; 
 }
 
-double CMixtureModel::draw(double *x, int dim, const gsl_rng *r, const double *old_x , int B)
+double CMixtureModel::draw(double *y, int dim, bool &if_new_sample, const gsl_rng *r, const double *x, double log_prob_x, int B)
 {	
 	double uniform_draw = gsl_rng_uniform(r); 	
 	double lum_sum = 0.0; 
@@ -99,13 +99,19 @@ double CMixtureModel::draw(double *x, int dim, const gsl_rng *r, const double *o
 	{
 		if (lum_sum <= uniform_draw && uniform_draw < lum_sum + weight[i])
 		{
-			model[i]->draw(x, dim, r, old_x, B);
-			return log_prob(x, dim); 
+			model[i]->draw(y, dim, if_new_sample, r, x, log_prob_x, B);
+			if (if_new_sample)
+				return log_prob(y, dim); 
+			else 
+				return log_prob_x; 
 		}
 		lum_sum += weight[i];
 	}
-	model[nModel-1]->draw(x, dim, r, old_x, B); 
-	return log_prob(x, dim); 
+	model[nModel-1]->draw(y, dim, if_new_sample, r, x, log_prob_x, B); 
+	if (if_new_sample)
+		return log_prob(y, dim); 
+	else 
+		return log_prob_x; 
 }
 
 void CMixtureModel::CalculateSetParameterNumber()

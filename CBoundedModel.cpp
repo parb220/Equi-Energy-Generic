@@ -1,5 +1,6 @@
 #include <cmath>
-#include "../include/CBoundedModel.h"
+#include <cstring>
+#include "CBoundedModel.h"
 
 CBoundedModel::CBoundedModel(double h, double t, CModel* original) : CModel(original->GetDataDimension(), original->GetParameterNumber()+2)
 {
@@ -34,10 +35,22 @@ double CBoundedModel::log_prob(const double *x, int dX)
 	return -energy(x,dX); 
 }
 
-double CBoundedModel::draw(double *x, int dX, const gsl_rng *r, const double *old_x, int B)
+double CBoundedModel::draw(double *y, int dY, bool & if_new_sample, const gsl_rng *r, const double *x, double log_prob_x, int B)
 {
-	double result = OriginalModel->draw(x, dX, r, old_x, B); 
-	return result;
+	double log_prob_y = OriginalModel->draw(y, dY, if_new_sample, r, x, log_prob_x, B);
+	if (if_new_sample && x != NULL)
+	{
+		double log_prob_y_bounded = (log_prob_y < -H ? log_prob_y : -H)/T; 
+		double log_prob_x_bounded = (log_prob_x < -H ? log_prob_x : -H)/T; 
+		double log_uniform = gsl_rng_uniform(r); 
+		if (log_uniform > log_prob_y_bounded - log_prob_x_bounded)
+		{
+			if_new_sample = false; 
+			memcpy(y, x, nData*sizeof(double)); 
+			log_prob_y = log_prob_x; 
+		}
+	} 
+	return log_prob_y; 
 }
 
 void CBoundedModel::GetMode(double *x, int nX, int iMode)

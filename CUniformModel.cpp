@@ -96,16 +96,17 @@ double CUniformModel::log_prob(const double *x, int nX)
 	return logP; 
 }
 
-double CUniformModel::draw(double *x, int nX, const gsl_rng *r, const double *old_x, int B)
+double CUniformModel::draw(double *y, int nY, bool &if_new_sample, const gsl_rng *r, const double *x, double log_prob_x, int B)
 {
 	/*if (nX < nData)
 		return -1; */
 	for (int n=0; n<=B; n++)
 	{
 		for (int i=0; i<nData; i++)
-			x[i] = gsl_rng_uniform(r)*(upper_bound[i]-lower_bound[i])+lower_bound[i]; 
+			y[i] = gsl_rng_uniform(r)*(upper_bound[i]-lower_bound[i])+lower_bound[i]; 
 	}
-	return log_prob(x, nData); 
+	if_new_sample = true; 
+	return log_prob(y, nData); 
 }
 
 void CUniformModel::GetMode(double *x, int nX, int iModel)

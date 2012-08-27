@@ -88,7 +88,7 @@ double CSimpleGaussianModel::log_prob(const double *x, int dim)
 }
 
 
-double CSimpleGaussianModel::draw(double *x, int dim, const gsl_rng *r, const double* old_x, int B)
+double CSimpleGaussianModel::draw(double *y, int dim, bool &if_new_sample, const gsl_rng *r, const double* x, double log_prob_x, int B)
 {
 /*	if (dim < nData)
 		return -1; */
@@ -96,10 +96,10 @@ double CSimpleGaussianModel::draw(double *x, int dim, const gsl_rng *r, const do
 	for (int n=0; n<=B; n++)
 	{
 		for (int i=0; i<nData; i++)
-			x[i] = mu[i] + gsl_ran_gaussian(r, sigma[i]);
+			y[i] = mu[i] + gsl_ran_gaussian(r, sigma[i]);
 	}
-
-	return log_prob(x, nData);  
+	if_new_sample = true; 
+	return log_prob(y, nData);  
 }
 
 void CSimpleGaussianModel::GetMode(double *x, int nX, int iModel)
