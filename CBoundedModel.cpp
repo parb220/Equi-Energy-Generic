@@ -46,7 +46,7 @@ double CBoundedModel::draw(double *y, int dY, bool &if_new_sample, const gsl_rng
 		if (log_uniform > log_prob_y_bounded - log_prob_x_bounded)
 		{
 			if_new_sample = false; 
-			memcpy(y, x, nData*sizeof(double)); 
+			memcpy(y, x, dY*sizeof(double)); 
 			log_prob_y_bounded = log_prob_x_bounded; 
 		}
 	} 
