@@ -91,7 +91,7 @@ double CMixtureModel::log_prob(const double *x, int dim)
 	return logP; 
 }
 
-double CMixtureModel::draw(double *y, int dim, bool &if_new_sample, const gsl_rng *r, const double *x, double log_prob_x, int B)
+double CMixtureModel::draw(double *y, int dim, bool &if_new_sample, const gsl_rng *r, int B)
 {	
 	double uniform_draw = gsl_rng_uniform(r); 	
 	double lum_sum = 0.0;
@@ -104,7 +104,7 @@ double CMixtureModel::draw(double *y, int dim, bool &if_new_sample, const gsl_rn
 		lum_sum += weight[i]; 
 		i++; 
 	}
-	model[i-1]->draw(y, dim, if_new_sample, r, x, log_prob_x, B);
+	model[i-1]->draw(y, dim, if_new_sample, r, B);
 	if (if_new_sample)
 		return log_prob(y, dim); 
 	else 

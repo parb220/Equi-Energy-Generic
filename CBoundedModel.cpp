@@ -50,9 +50,9 @@ double CBoundedModel::log_prob(CSampleIDWeight &x)
 	return -energy(x); 
 }
 
-double CBoundedModel::draw(double *y, int dY, bool &if_new_sample, const gsl_rng *r, const double *x, double log_prob_x, int B)
+double CBoundedModel::draw(double *y, int dY, bool &if_new_sample, const gsl_rng *r, intB)
 {
-	double log_prob_y = OriginalModel->draw(y, dY, if_new_sample, r, x, log_prob_x, B);
+	double log_prob_y = OriginalModel->draw(y, dY, if_new_sample, r, B);
 	double log_prob_y_bounded = (log_prob_y < -H ? log_prob_y : -H)/T; 
 	if (if_new_sample && x != NULL)
 	{
