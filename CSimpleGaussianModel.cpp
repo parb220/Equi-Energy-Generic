@@ -80,7 +80,6 @@ double CSimpleGaussianModel::log_prob(const double *x, int dim)
 	return logP;
 }
 
-
 double CSimpleGaussianModel::draw(double *y, int dim, bool &if_new_sample, const gsl_rng *r, const double* x, double log_prob_x, int B)
 {
 	for (int n=0; n<=B; n++)

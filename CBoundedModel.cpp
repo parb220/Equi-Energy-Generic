@@ -29,10 +29,25 @@ double CBoundedModel::energy(const double* x, int dX)
 		return H/T; 
 }
 
+double CBoundedModel::energy(CSampleIDWeight &x)
+{
+	double original_energy = OriginalModel->energy(x); 
+	x.SetWeight(original_energy); 
+	if (original_energy >= H)
+		return original_energy/T; 
+	else 
+		return H/T; 
+}
+
 double CBoundedModel::log_prob(const double *x, int dX)
 {
 	// log_prob = -energy
 	return -energy(x,dX); 
+}
+
+double CBoundedModel::log_prob(CSampleIDWeight &x)
+{
+	return -energy(x); 
 }
 
 double CBoundedModel::draw(double *y, int dY, bool &if_new_sample, const gsl_rng *r, const double *x, double log_prob_x, int B)
