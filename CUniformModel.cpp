@@ -2,7 +2,7 @@
 #include <cfloat>
 #include <cstring>
 #include <gsl/gsl_rng.h> 
-#include "../include/CUniformModel.h"
+#include "CUniformModel.h"
 
 using namespace std; 
 
@@ -88,7 +88,7 @@ double CUniformModel::log_prob(const double *x, int nX)
 	return logP; 
 }
 
-double CUniformModel::draw(double *y, int nY, bool &if_new_sample, const gsl_rng *r, const double *x, double log_prob_x, int B)
+double CUniformModel::draw(double *y, int nY, bool &if_new_sample, const gsl_rng *r, int B)
 {
 	for (int n=0; n<=B; n++)
 	{

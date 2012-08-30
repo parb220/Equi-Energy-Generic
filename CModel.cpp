@@ -8,16 +8,17 @@
 
 using namespace std;
 
-double CModel::log_prob(CSampleIDWeight &x)
+void CModel::CalculateLogProb(CSampleIDWeight &x)
 {
-	if (!x.calculated)
-        {
-        	x.log_prob=log_prob(x.GetData(), x.GetDataDimension());
-        	x.calculated = true;
- 	}               
-        return x.log_prob;
+       	x.log_prob=log_prob(x.GetData(), x.GetDataDimension());
+	x.SetWeight(-x.log_prob); 
 }
 
+double CModel::log_prob(CSampleIDWeight &x)
+{
+	CalculateLogProb(x); 
+	return x.log_prob; 
+}
 
 double CModel::energy(const double *x, int nX) 
 {
@@ -27,9 +28,17 @@ double CModel::energy(const double *x, int nX)
 
 double CModel::energy(CSampleIDWeight &x)
 {
-	if (!x.calculated)
-		log_prob(x); 
-	return -x.log_prob; 
+	CalculateLogProb(x); 
+	return -x.log_prob;  
+}
+
+CSampleIDWeight CModel::draw(bool &if_new_sample, const gsl_rng *r, int B)
+{
+	CSampleIDWeight y; 
+	y.SetDataDimension(nData); 
+	y.log_prob = draw(y.GetData(), nData, if_new_sample, r, B); 
+	y.SetWeight(-y.log_prob);
+	return y; 
 }
 
 // Multiiple-try Metropolis
@@ -39,7 +48,7 @@ double CModel::draw(CTransitionModel *transition_model, double *y, int dY, bool 
 	return log_prob_y; 
 }
 
-CSampleIDWeight CModel::draw(CTransitionModel *transition_model, bool &new_sample_flag, const gsl_rng *r, const CSampleIDWeight &x, int B)
+CSampleIDWeight CModel::draw(CTransitionModel *transition_model, bool &new_sample_flag, const gsl_rng *r, CSampleIDWeight &x, int B)
 {
 	CSampleIDWeight y= draw_block(0, x.GetDataDimension(), transition_model, new_sample_flag, r, x, B); 
 	return y; 
@@ -70,7 +79,7 @@ double CModel::draw(CTransitionModel **proposal, double *y, int dim, vector <boo
 	return log_prob_y; 
 }
 
-CSampleIDWeight CModel::draw(CTransitionModel **proposal, vector <bool> &new_sample_flag, const gsl_rng *r, const CSampleIDWeight &x, int nBlock, const vector < int> &blockSize, int mMH)
+CSampleIDWeight CModel::draw(CTransitionModel **proposal, vector <bool> &new_sample_flag, const gsl_rng *r, CSampleIDWeight &x, int nBlock, const vector < int> &blockSize, int mMH)
 {
 	CSampleIDWeight x_hold = x; 
 	CSampleIDWeight y; 
@@ -180,20 +189,19 @@ double CModel::draw_block(int dim_lum_sum, int block_size, CTransitionModel *pro
 	return log_prob_y; 
 }
 
-CSampleIDWeight CModel::draw_block(int dim_lum_sum, int block_size, CTransitionModel *proposal, bool &new_sample_flag, const gsl_rng *r,  const CSampleIDWeight &x, int mMH) 
+CSampleIDWeight CModel::draw_block(int dim_lum_sum, int block_size, CTransitionModel *proposal, bool &new_sample_flag, const gsl_rng *r, CSampleIDWeight &x, int mMH) 
 {
 	// only [dim_lum_sum, dim_lum_sum+block_size) needs to be updated
 	// the other dimensions will keep x's
 	CSampleIDWeight y = x;  
 	if (proposal == NULL)
 	{
-		CSampleIDWeight intermediate_y = this->draw(new_sample_flag, r, mMH); 
-		
+		CSampleIDWeight intermediate_y = draw(new_sample_flag, r, mMH); 
 		if (new_sample_flag)
 		{
 			// only updates [dim_lum_sum, dim_lum_sum+block_size)
 			y.PartialCopyFrom(intermediate_y, dim_lum_sum, block_size); 
-			y.log_prob = this->log_prob(y); 
+			CalculateLogProb(y);  
 		}
 		return y; 	
 	}
@@ -218,7 +226,7 @@ CSampleIDWeight CModel::draw_block(int dim_lum_sum, int block_size, CTransitionM
 		if (local_flag) 
 		{
 			y_intermediate[iMH].PartialCopyFrom(dim_lum_sum, partial_y, 0, block_size); 
-			y_intermediate[iMH].log_prob = this->log_prob(y_intermediate[iMH]);
+			CalculateLogProb(y_intermediate[iMH]);
 		} 
 		if (iMH == 0)
 			log_prob_intermediate_y = y_intermediate[iMH].log_prob;
@@ -236,8 +244,7 @@ CSampleIDWeight CModel::draw_block(int dim_lum_sum, int block_size, CTransitionM
 		iMH++;
 	}
 	// only updates on [dim_lum_sum, dim_lum_sum +block_size)
-	y.PartialCopyFrom(y_intermediate[iMH], dim_lum_sum, block_size); 
-	y.log_prob = y_intermediate[iMH].log_prob; 
+	y = y_intermediate[iMH]; 
 
 	// generate intermediate x's from y
 	double log_prob_intermediate_x  = x.log_prob; 
@@ -259,7 +266,7 @@ CSampleIDWeight CModel::draw_block(int dim_lum_sum, int block_size, CTransitionM
 			if (local_flag) 
 			{
 				x_intermediate[iMH].PartialCopyFrom(dim_lum_sum, partial_x, 0, block_size); 
-				x_intermediate[iMH].log_prob = this->log_prob(x_intermediate[iMH]); 
+				CalculateLogProb(x_intermediate[iMH]); 
 			}
 			log_prob_intermediate_x = AddScaledLogs(1.0, log_prob_intermediate_x, 1.0, x_intermediate[iMH].log_prob); 
 		}

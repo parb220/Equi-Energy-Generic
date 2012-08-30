@@ -104,11 +104,7 @@ double CMixtureModel::draw(double *y, int dim, bool &if_new_sample, const gsl_rn
 		lum_sum += weight[i]; 
 		i++; 
 	}
-	model[i-1]->draw(y, dim, if_new_sample, r, B);
-	if (if_new_sample)
-		return log_prob(y, dim); 
-	else 
-		return log_prob_x; 
+	return model[i-1]->draw(y, dim, if_new_sample, r, B);
 }
 
 void CMixtureModel::CalculateSetParameterNumber()

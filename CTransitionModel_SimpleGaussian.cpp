@@ -15,7 +15,7 @@ double CTransitionModel_SimpleGaussian::draw(double *y, int dY, bool &if_new_sam
 {
 	CSimpleGaussianModel::SetMeanParameter(x, dY); 
 	double result; 
-	result = CSimpleGaussianModel::draw(y, dY, if_new_sample, r, x, log_prob_x, B);
+	result = CSimpleGaussianModel::draw(y, dY, if_new_sample, r, B);
 	return result; 
 }
 
