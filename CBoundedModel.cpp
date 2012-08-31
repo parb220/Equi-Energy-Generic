@@ -28,9 +28,9 @@ double CBoundedModel::log_prob(CSampleIDWeight &x) const
 	return x.log_prob; 
 }
 
-CSampleIDWeight CBoundedModel::draw(bool &if_new_sample, const gsl_rng *r, int B) const
+void CBoundedModel::draw(CSampleIDWeight &y, bool &if_new_sample, const gsl_rng *r, int B) const
 {
-	CSampleIDWeight y = OriginalModel->draw(if_new_sample, r, B); 
+	OriginalModel->draw(y, if_new_sample, r, B); 
 	// At this point: 
 	// y.weight = OriginalModel.energy(y); 
 	// y.log_prob = OriginalModel.log_prob(y)
@@ -38,15 +38,12 @@ CSampleIDWeight CBoundedModel::draw(bool &if_new_sample, const gsl_rng *r, int B
 	// Now:
 	// y.log_prob is bounded
 	// y.weight = OriginalModel.energy(y); 
-	return y; 
 }
 
-CSampleIDWeight CBoundedModel::GetMode(int iMode) const
+void CBoundedModel::GetMode(CSampleIDWeight &x, int iMode) const
 {
-	CSampleIDWeight x;
-	x = OriginalModel->GetMode(iMode); 
+	OriginalModel->GetMode(x, iMode); 
 	// only x.log_prob needs to be updated (bounded and scaled by H and T)
 	// x.weight remains as the original model
 	x.log_prob = (x.log_prob < -H ? x.log_prob : -H) /T; 
-	return x; 
 }

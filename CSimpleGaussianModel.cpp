@@ -105,9 +105,8 @@ double CSimpleGaussianModel::log_prob(CSampleIDWeight &x) const
 	return x.log_prob; 
 }
 
-CSampleIDWeight CSimpleGaussianModel::draw(bool &if_new_sample, const gsl_rng *r, int B) const
+void CSimpleGaussianModel::draw(CSampleIDWeight &y, bool &if_new_sample, const gsl_rng *r, int B) const
 {
-	CSampleIDWeight y; 
 	y.SetDataDimension(nData); 
 	for (int n=0; n<=B; n++)
 	{
@@ -116,14 +115,11 @@ CSampleIDWeight CSimpleGaussianModel::draw(bool &if_new_sample, const gsl_rng *r
 	}
 	if_new_sample = true; 
 	log_prob(y); 
-	return y; 
 }
 
-CSampleIDWeight CSimpleGaussianModel::GetMode(int iModel) const
+void CSimpleGaussianModel::GetMode(CSampleIDWeight &x, int iModel) const
 {
-	CSampleIDWeight x; 
 	x.SetDataDimension(nData); 
 	memcpy(x.GetData(), mu, nData*sizeof(double)); 
 	log_prob(x); 
-	return x; 
 }

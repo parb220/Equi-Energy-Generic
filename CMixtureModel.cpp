@@ -103,7 +103,7 @@ double CMixtureModel::log_prob(CSampleIDWeight &x) const
 	return x.log_prob; 
 }
 
-CSampleIDWeight CMixtureModel::draw(bool &if_new_sample, const gsl_rng *r, int B) const
+void CMixtureModel::draw(CSampleIDWeight &y, bool &if_new_sample, const gsl_rng *r, int B) const
 {	
 	double uniform_draw = gsl_rng_uniform(r); 	
 	double lum_sum = 0.0;
@@ -116,10 +116,9 @@ CSampleIDWeight CMixtureModel::draw(bool &if_new_sample, const gsl_rng *r, int B
 		lum_sum += weight[i]; 
 		i++; 
 	}
-	CSampleIDWeight y = model[i-1]->draw(if_new_sample, r, B);
+	model[i-1]->draw(y, if_new_sample, r, B);
 	log_prob(y); 
 	if_new_sample = true; 
-	return y; 
 }
 
 void CMixtureModel::CalculateSetParameterNumber() 
@@ -130,9 +129,8 @@ void CMixtureModel::CalculateSetParameterNumber()
 	nParameter = nP;
 }
 
-CSampleIDWeight CMixtureModel::GetMode(int iMode) const
+void CMixtureModel::GetMode(CSampleIDWeight &x, int iMode) const
 {
-	CSampleIDWeight x = model[iMode]->GetMode(); 
+	model[iMode]->GetMode(x); 
 	log_prob(x); 
-	return x; 
 }

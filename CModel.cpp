@@ -16,45 +16,44 @@ double CModel::energy(CSampleIDWeight &x) const
 
 // Multiiple-try Metropolis
 
-CSampleIDWeight CModel::draw(CTransitionModel *transition_model, bool &new_sample_flag, const gsl_rng *r, const CSampleIDWeight &x, int B) const 
+void CModel::draw(CSampleIDWeight &y, CTransitionModel *transition_model, bool &new_sample_flag, const gsl_rng *r, const CSampleIDWeight &x, int B) const 
 {
-	CSampleIDWeight y= draw_block(0, x.GetDataDimension(), transition_model, new_sample_flag, r, x, B); 
-	return y; 
+	y.SetDataDimension(x.GetDataDimension()); 
+	draw_block(y, 0, x.GetDataDimension(), transition_model, new_sample_flag, r, x, B); 
 }
 
-CSampleIDWeight CModel::draw(CTransitionModel **proposal, vector <bool> &new_sample_flag, const gsl_rng *r, const CSampleIDWeight &x, int nBlock, const vector < int> &blockSize, int mMH) const
+void CModel::draw(CSampleIDWeight &y, CTransitionModel **proposal, vector <bool> &new_sample_flag, const gsl_rng *r, const CSampleIDWeight &x, int nBlock, const vector < int> &blockSize, int mMH) const
 {
 	CSampleIDWeight x_hold = x; 
-	CSampleIDWeight y; 
+	y.SetDataDimension(x.GetDataDimension()); 
 
 	int dim_lum_sum=0; 
 	bool local_flag; 
 	for (int iBlock=0; iBlock<nBlock; iBlock++)
 	{
-		y = draw_block(dim_lum_sum, blockSize[iBlock], proposal[iBlock], local_flag, r, x_hold, mMH); 
+		draw_block(y, dim_lum_sum, blockSize[iBlock], proposal[iBlock], local_flag, r, x_hold, mMH); 
 		new_sample_flag[iBlock] = local_flag;
 		if (local_flag)
 			x_hold = y; 
 		dim_lum_sum += blockSize[iBlock]; 
 	}
-	return y; 
 }
 
-CSampleIDWeight CModel::draw_block(int dim_lum_sum, int block_size, CTransitionModel *proposal, bool &new_sample_flag, const gsl_rng *r, const CSampleIDWeight &x, int mMH) const
+void CModel::draw_block(CSampleIDWeight &y, int dim_lum_sum, int block_size, CTransitionModel *proposal, bool &new_sample_flag, const gsl_rng *r, const CSampleIDWeight &x, int mMH) const
 {
 	// only [dim_lum_sum, dim_lum_sum+block_size) needs to be updated
 	// the other dimensions will keep x's
-	CSampleIDWeight y = x;  
+	y = x;  
 	if (proposal == NULL)
 	{
-		CSampleIDWeight intermediate_y = draw(new_sample_flag, r, mMH); 
+		CSampleIDWeight intermediate_y; 
+		draw(intermediate_y, new_sample_flag, r, mMH); 
 		if (new_sample_flag)
 		{
 			// only updates [dim_lum_sum, dim_lum_sum+block_size)
 			y.PartialCopyFrom(intermediate_y, dim_lum_sum, block_size); 
 			log_prob(y);  
 		}
-		return y; 	
 	}
 	// mMH+1 draw of y based on x
 	vector <CSampleIDWeight > y_intermediate(mMH+1); 
@@ -73,7 +72,7 @@ CSampleIDWeight CModel::draw_block(int dim_lum_sum, int block_size, CTransitionM
 	{
 		y_intermediate[iMH] = x; 
 		// only draws on [dim_lum_sum, dim_lum_sum+block_size)
-		partial_y = proposal->draw(local_flag, r, partial_x, mMH);
+		proposal->draw(partial_y, local_flag, r, partial_x, mMH);
 		if (local_flag) 
 		{
 			y_intermediate[iMH].PartialCopyFrom(dim_lum_sum, partial_y, 0, block_size); 
@@ -113,7 +112,7 @@ CSampleIDWeight CModel::draw_block(int dim_lum_sum, int block_size, CTransitionM
 			x_intermediate[iMH] = x; 
 			// except for [dim_lum_sum, dim_lum_sum+block_size), the other dimensions 
 			// of y are identical to x and x_intermediate
-			partial_x = proposal->draw(local_flag, r, partial_y, mMH);
+			proposal->draw(partial_x, local_flag, r, partial_y, mMH);
 			if (local_flag) 
 			{
 				x_intermediate[iMH].PartialCopyFrom(dim_lum_sum, partial_x, 0, block_size); 
@@ -132,5 +131,4 @@ CSampleIDWeight CModel::draw_block(int dim_lum_sum, int block_size, CTransitionM
 		new_sample_flag = false; 
 		y = x; 
 	}
-	return y; 
 }

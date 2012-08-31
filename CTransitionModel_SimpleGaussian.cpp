@@ -8,17 +8,16 @@
 double CTransitionModel_SimpleGaussian::log_prob(const CSampleIDWeight &x, const CSampleIDWeight &y) const
 {
 	CSampleIDWeight diff = y;
-	diff = diff -x;  
+	diff.Subtract(x); 
 	//CSimpleGaussianModel::SetMeanParameter(x, dim);
 	return CSimpleGaussianModel::log_prob(diff); 
 }
 
-CSampleIDWeight CTransitionModel_SimpleGaussian::draw(bool &if_new_sample, const gsl_rng *r, const CSampleIDWeight &x, int B) const
+void CTransitionModel_SimpleGaussian::draw(CSampleIDWeight &result, bool &if_new_sample, const gsl_rng *r, const CSampleIDWeight &x, int B) const
 {
 	// CSimpleGaussianModel::SetMeanParameter(x, dY); 
-	CSampleIDWeight result; 
-	result = CSimpleGaussianModel::draw(if_new_sample, r, B);
-	return result + x; 
+	CSimpleGaussianModel::draw(result, if_new_sample, r, B);
+	result.Add(x); 
 }
 
 void CTransitionModel_SimpleGaussian::set_step_size(double _s, int _dim)
@@ -68,7 +67,7 @@ void CTransitionModel_SimpleGaussian:: TuneDimension(double targetAcc, int LPeri
 		// draw LPeriod times to estimate acceptance rate
 		for (int t=0; t<LPeriod; t++)
 		{
-			x_new = targetModel->draw_block(offsetX, 1, proposal_dimension, if_new_sample, r, x_current); 
+			targetModel->draw_block(x_new, offsetX, 1, proposal_dimension, if_new_sample, r, x_current); 
 			if (if_new_sample)
 			{
 				nAccepted ++; 

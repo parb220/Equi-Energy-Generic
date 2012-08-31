@@ -111,9 +111,8 @@ double CUniformModel::log_prob(CSampleIDWeight &x) const
 	return x.log_prob;  
 }
 
-CSampleIDWeight CUniformModel::draw(bool &if_new_sample, const gsl_rng *r, int B) const 
+void CUniformModel::draw(CSampleIDWeight &y, bool &if_new_sample, const gsl_rng *r, int B) const 
 {
-	CSampleIDWeight y; 
 	y.SetDataDimension(nData); 
 	for (int n=0; n<=B; n++)
 	{
@@ -122,17 +121,14 @@ CSampleIDWeight CUniformModel::draw(bool &if_new_sample, const gsl_rng *r, int B
 	}
 	if_new_sample = true; 
 	log_prob(y); 
-	return y;  
 }
 
-CSampleIDWeight CUniformModel::GetMode(int iModel) const
+void CUniformModel::GetMode(CSampleIDWeight &x, int iModel) const
 {
-	CSampleIDWeight x; 
 	x.SetDataDimension(nData); 
 	if (iModel == 0)
 		memcpy(x.GetData(), lower_bound, nData*sizeof(double)); 
 	else 
 		memcpy(x.GetData(), upper_bound, nData*sizeof(double)); 
 	log_prob(x); 
-	return x; 
 }
