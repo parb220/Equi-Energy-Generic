@@ -5,23 +5,20 @@
 #include "CTransitionModel_SimpleGaussian.h"
 #include "MHAdaptive.h"
 
-double CTransitionModel_SimpleGaussian::log_prob_raw(const double *x, const double *y, int dim) const
+double CTransitionModel_SimpleGaussian::log_prob(const CSampleIDWeight &x, const CSampleIDWeight &y) const
 {
-	double *diff = new double[dim]; 
-	for (int i=0; i<dim; i++)
-		diff[i] = y[i]-x[i]; 
+	CSampleIDWeight diff = y;
+	diff = diff -x;  
 	//CSimpleGaussianModel::SetMeanParameter(x, dim);
-	return CSimpleGaussianModel::log_prob_raw(diff, dim); 
+	return CSimpleGaussianModel::log_prob(diff); 
 }
 
-double CTransitionModel_SimpleGaussian::draw_raw(double *y, int dY, bool &if_new_sample, const gsl_rng *r, const double *x, double log_prob_x, int B) const
+CSampleIDWeight CTransitionModel_SimpleGaussian::draw(bool &if_new_sample, const gsl_rng *r, const CSampleIDWeight &x, int B) const
 {
 	// CSimpleGaussianModel::SetMeanParameter(x, dY); 
-	double result; 
-	result = CSimpleGaussianModel::draw_raw(y, dY, if_new_sample, r, B);
-	for (int i=0; i<dY; i++)
-		y[i] += x[i]; 
-	return result; 
+	CSampleIDWeight result; 
+	result = CSimpleGaussianModel::draw(if_new_sample, r, B);
+	return result + x; 
 }
 
 void CTransitionModel_SimpleGaussian::set_step_size(double _s, int _dim)
@@ -43,19 +40,20 @@ double CTransitionModel_SimpleGaussian::get_step_size(int _dim) const
 		return GetSigmaParameter(_dim); 
 }
 
-void CTransitionModel_SimpleGaussian:: Tune_raw(double targetAcc, int LPeriod, int NPeriod, const gsl_rng *r, CModel *targetModel, const double *xStart, int dX, double logProbStart, int offsetX, int sizeX)
+void CTransitionModel_SimpleGaussian:: Tune(double targetAcc, int LPeriod, int NPeriod, const gsl_rng *r, CModel *targetModel, CSampleIDWeight &xStart, int offsetX, int sizeX)
 {
 	for (int offsetP=0; offsetP<sizeX; offsetP++)
-		TuneDimension_raw(targetAcc, LPeriod, NPeriod, r, targetModel, xStart, dX, logProbStart, offsetX+offsetP, offsetP); 
+		TuneDimension(targetAcc, LPeriod, NPeriod, r, targetModel, xStart, offsetX+offsetP, offsetP); 
 }
 
-void CTransitionModel_SimpleGaussian:: TuneDimension_raw(double targetAcc, int LPeriod, int NPeriod, const gsl_rng *r, CModel *targetModel, const double *xStart, int dX, double logProbStart, int offsetX, int offsetP)
+void CTransitionModel_SimpleGaussian:: TuneDimension(double targetAcc, int LPeriod, int NPeriod, const gsl_rng *r, CModel *targetModel, CSampleIDWeight &xStart, int offsetX, int offsetP)
 {
 	double initialSigma = this->get_step_size(offsetP); 
 	CTransitionModel *proposal_dimension = new CTransitionModel_SimpleGaussian(1, &initialSigma); 
-	double *x_current = new double[dX]; 
-	double *x_new = new double[dX]; 
-	double log_x_current, log_x_new; 
+	CSampleIDWeight x_current, x_new; 
+	x_current.SetDataDimension(xStart.GetDataDimension()); 
+	x_new.SetDataDimension(xStart.GetDataDimension()); 
+	
 	int nAccepted=0; 
 	bool if_new_sample; 
 	MHAdaptive *adaptive = new MHAdaptive(targetAcc, initialSigma); 
@@ -63,20 +61,18 @@ void CTransitionModel_SimpleGaussian:: TuneDimension_raw(double targetAcc, int L
 	for (int iPeriod=0; iPeriod<NPeriod; iPeriod++)
 	{
 		// always start from xStart
-		memcpy(x_current, xStart, dX*sizeof(double)); 
-		log_x_current = logProbStart; 
+		x_current = xStart; 
 
 		nAccepted = 0; 
 
 		// draw LPeriod times to estimate acceptance rate
 		for (int t=0; t<LPeriod; t++)
 		{
-			log_x_new = targetModel->draw_block_raw(offsetX, 1, proposal_dimension, x_new, dX, if_new_sample, r, x_current, log_x_current); 
+			x_new = targetModel->draw_block(offsetX, 1, proposal_dimension, if_new_sample, r, x_current); 
 			if (if_new_sample)
 			{
 				nAccepted ++; 
-				log_x_current = log_x_new; 
-				memcpy(x_current+offsetX, x_new+offsetX, sizeof(double)); 
+				x_current = x_new; 
 			}
 		}
 
@@ -85,8 +81,6 @@ void CTransitionModel_SimpleGaussian:: TuneDimension_raw(double targetAcc, int L
 			proposal_dimension->set_step_size(adaptive->GetScale()); 
 	}	
 	this->set_step_size(adaptive->GetBestScale(), offsetP); 
-	delete [] x_current; 
-	delete [] x_new;
 	delete adaptive; 
 	delete proposal_dimension; 
 }

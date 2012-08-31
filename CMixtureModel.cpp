@@ -92,17 +92,18 @@ void CMixtureModel::SetModelNumber(int nM)
 	} 
 }
 
-double CMixtureModel::log_prob_raw(const double *x, int dim) const
+double CMixtureModel::log_prob(CSampleIDWeight &x) const
 {
 	// return log(probability(x, dim)); 
-	CSampleIDWeight xPack(x, dim); 
-	double logP = log(weight[0]) + model[0]->log_prob(xPack); 
+	double logP = log(weight[0]) + model[0]->log_prob(x); 
 	for (int i=1; i<nModel; i++)
-		logP = AddScaledLogs(1.0, logP, weight[i], model[i]->log_prob(xPack)); 	
-	return logP; 
+		logP = AddScaledLogs(1.0, logP, weight[i], model[i]->log_prob(x)); 	
+	x.log_prob = logP; 
+	x.SetWeight(-x.log_prob); 
+	return x.log_prob; 
 }
 
-double CMixtureModel::draw_raw(double *y, int dim, bool &if_new_sample, const gsl_rng *r, int B) const
+CSampleIDWeight CMixtureModel::draw(bool &if_new_sample, const gsl_rng *r, int B) const
 {	
 	double uniform_draw = gsl_rng_uniform(r); 	
 	double lum_sum = 0.0;
@@ -115,10 +116,10 @@ double CMixtureModel::draw_raw(double *y, int dim, bool &if_new_sample, const gs
 		lum_sum += weight[i]; 
 		i++; 
 	}
-	CSampleIDWeight yPack = model[i-1]->draw(if_new_sample, r, B);
-	yPack.log_prob = log_prob(yPack); 
-	yPack.CopyData(y, dim); 
-	return yPack.log_prob; 
+	CSampleIDWeight y = model[i-1]->draw(if_new_sample, r, B);
+	log_prob(y); 
+	if_new_sample = true; 
+	return y; 
 }
 
 void CMixtureModel::CalculateSetParameterNumber() 
@@ -129,8 +130,9 @@ void CMixtureModel::CalculateSetParameterNumber()
 	nParameter = nP;
 }
 
-void CMixtureModel::GetMode_raw(double *x, int nX, int iMode) const
+CSampleIDWeight CMixtureModel::GetMode(int iMode) const
 {
-	CSampleIDWeight xPack = model[iMode]->GetMode(); 
-	xPack.CopyData(x, nX); 
+	CSampleIDWeight x = model[iMode]->GetMode(); 
+	log_prob(x); 
+	return x; 
 }

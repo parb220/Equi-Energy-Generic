@@ -95,35 +95,44 @@ void CUniformModel::SetUpperBoundParameter(const double *b, int nD)
 	memcpy(upper_bound, b, nD*sizeof(double)); 
 }
 
-double CUniformModel::log_prob_raw(const double *x, int nX) const
+double CUniformModel::log_prob(CSampleIDWeight &x) const
 {
 	// return log(probability(x,nX)); 
 	double logP = 0; 
-	for (int i=0; i<nX; i++)
+	for (int i=0; i<x.GetDataDimension(); i++)
 	{
 		if (x[i] < lower_bound[i] || x[i] > upper_bound[i])
 			return DBL_MIN_EXP; 
 		else 
 			logP -= log(upper_bound[i]-lower_bound[i]); 
 	}
-	return logP; 
+	x.log_prob = logP; 
+	x.SetWeight(-x.log_prob); 
+	return x.log_prob;  
 }
 
-double CUniformModel::draw_raw(double *y, int nY, bool &if_new_sample, const gsl_rng *r, int B) const 
+CSampleIDWeight CUniformModel::draw(bool &if_new_sample, const gsl_rng *r, int B) const 
 {
+	CSampleIDWeight y; 
+	y.SetDataDimension(nData); 
 	for (int n=0; n<=B; n++)
 	{
-		for (int i=0; i<nY; i++)
+		for (int i=0; i<y.GetDataDimension(); i++)
 			y[i] = gsl_rng_uniform(r)*(upper_bound[i]-lower_bound[i])+lower_bound[i]; 
 	}
 	if_new_sample = true; 
-	return log_prob_raw(y, nY); 
+	log_prob(y); 
+	return y;  
 }
 
-void CUniformModel::GetMode_raw(double *x, int nX, int iModel) const
+CSampleIDWeight CUniformModel::GetMode(int iModel) const
 {
+	CSampleIDWeight x; 
+	x.SetDataDimension(nData); 
 	if (iModel == 0)
-		memcpy(x, lower_bound, nX*sizeof(double)); 
+		memcpy(x.GetData(), lower_bound, nData*sizeof(double)); 
 	else 
-		memcpy(x, upper_bound, nX*sizeof(double)); 
+		memcpy(x.GetData(), upper_bound, nData*sizeof(double)); 
+	log_prob(x); 
+	return x; 
 }

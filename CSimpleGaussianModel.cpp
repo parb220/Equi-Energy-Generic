@@ -95,26 +95,35 @@ void CSimpleGaussianModel::SetSigmaParameter(const double *s, int dim)
 	memcpy(sigma, s, dim*sizeof(double)); 
 }
 
-double CSimpleGaussianModel::log_prob_raw(const double *x, int dim) const
+double CSimpleGaussianModel::log_prob(CSampleIDWeight &x) const
 {
 	double logP = 0.0; 
-	for (int i=0; i<dim; i++)
+	for (int i=0; i<x.GetDataDimension();  i++)
 		logP -= ((x[i]-mu[i])/sigma[i])*((x[i]-mu[i])/sigma[i])+log(sigma[i])+0.5*log(2.0)+0.5*log(M_PI); 
-	return logP;
+	x.log_prob = logP; 
+	x.SetWeight(-x.log_prob); 
+	return x.log_prob; 
 }
 
-double CSimpleGaussianModel::draw_raw(double *y, int dim, bool &if_new_sample, const gsl_rng *r, int B) const
+CSampleIDWeight CSimpleGaussianModel::draw(bool &if_new_sample, const gsl_rng *r, int B) const
 {
+	CSampleIDWeight y; 
+	y.SetDataDimension(nData); 
 	for (int n=0; n<=B; n++)
 	{
-		for (int i=0; i<dim; i++)
+		for (int i=0; i<y.GetDataDimension(); i++)
 			y[i] = mu[i] + gsl_ran_gaussian(r, sigma[i]);
 	}
 	if_new_sample = true; 
-	return log_prob_raw(y, dim);  
+	log_prob(y); 
+	return y; 
 }
 
-void CSimpleGaussianModel::GetMode_raw(double *x, int nX, int iModel) const
+CSampleIDWeight CSimpleGaussianModel::GetMode(int iModel) const
 {
-	memcpy(x, mu, nX*sizeof(double)); 
+	CSampleIDWeight x; 
+	x.SetDataDimension(nData); 
+	memcpy(x.GetData(), mu, nData*sizeof(double)); 
+	log_prob(x); 
+	return x; 
 }
