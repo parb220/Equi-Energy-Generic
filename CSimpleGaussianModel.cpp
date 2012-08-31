@@ -11,6 +11,11 @@ CSimpleGaussianModel::CSimpleGaussianModel(int dim):CModel(dim, 2*dim)
 	{
 		mu = new double[nData]; 
 		sigma = new double[nData];
+		for (int i=0; i<nData; i++)
+		{
+			mu[i] = 0.0; 
+			sigma[i] = 1.0; 
+		}
 	}
 	else 
 	{
@@ -25,8 +30,20 @@ CSimpleGaussianModel::CSimpleGaussianModel(int dim, const double *m, const doubl
 	{
 		mu = new double[nData]; 
 		sigma = new double[nData]; 
-		memcpy(mu, m, nData*sizeof(double)); 
-		memcpy(sigma, s, nData*sizeof(double)); 
+		if (m == NULL)
+		{
+			for (int i=0; i<nData; i++)
+				mu[i] = 0.0; 
+		}
+		else 
+			memcpy(mu, m, nData*sizeof(double)); 
+		if (s == NULL)
+		{
+			for (int i=0; i<nData; i++)
+				sigma[i] = 1.0; 
+		}
+		else 
+			memcpy(sigma, s, nData*sizeof(double)); 
 	}
 	else 
 	{
@@ -56,6 +73,12 @@ void CSimpleGaussianModel::SetDataDimension(int _dim)
 		mu = new double[_dim]; 
 		sigma = new double[_dim]; 
 		nData = _dim; 
+		for (int i=0; i<nData; i++)
+                {
+                        mu[i] = 0.0;
+                        sigma[i] = 1.0; 
+                }
+
 	}
 }
 
@@ -72,7 +95,7 @@ void CSimpleGaussianModel::SetSigmaParameter(const double *s, int dim)
 	memcpy(sigma, s, dim*sizeof(double)); 
 }
 
-double CSimpleGaussianModel::log_prob(const double *x, int dim)
+double CSimpleGaussianModel::log_prob_raw(const double *x, int dim) const
 {
 	double logP = 0.0; 
 	for (int i=0; i<dim; i++)
@@ -80,7 +103,7 @@ double CSimpleGaussianModel::log_prob(const double *x, int dim)
 	return logP;
 }
 
-double CSimpleGaussianModel::draw(double *y, int dim, bool &if_new_sample, const gsl_rng *r, int B)
+double CSimpleGaussianModel::draw_raw(double *y, int dim, bool &if_new_sample, const gsl_rng *r, int B) const
 {
 	for (int n=0; n<=B; n++)
 	{
@@ -88,10 +111,10 @@ double CSimpleGaussianModel::draw(double *y, int dim, bool &if_new_sample, const
 			y[i] = mu[i] + gsl_ran_gaussian(r, sigma[i]);
 	}
 	if_new_sample = true; 
-	return log_prob(y, dim);  
+	return log_prob_raw(y, dim);  
 }
 
-void CSimpleGaussianModel::GetMode(double *x, int nX, int iModel)
+void CSimpleGaussianModel::GetMode_raw(double *x, int nX, int iModel) const
 {
 	memcpy(x, mu, nX*sizeof(double)); 
 }

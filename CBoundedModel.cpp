@@ -19,41 +19,43 @@ void CBoundedModel::SetT(double t)
 	T= t; 
 }
 
-void CBoundedModel::CalculateLogProb(CSampleIDWeight &x)
+void CBoundedModel::CalculateLogProb(CSampleIDWeight &x) const
 {
-	double original_energy = OriginalModel->energy(x); 
-	x.SetWeight(original_energy); 
-	if (original_energy >= H)
-		x.log_prob = -original_energy/T; 
-	else 
-		x.log_prob = -H/T; 
+	x.log_prob = OriginalModel->log_prob(x); 
+	x.SetWeight(-x.log_prob); 
+	x.log_prob = (x.log_prob < -H ? x.log_prob : -H)/T; 
 }
 
-double CBoundedModel::log_prob(const double *x, int dX)
+double CBoundedModel::log_prob_raw(const double *x, int dX) const
 {
-	// log_prob = -energy
-	double original_energy = OriginalModel->energy(x, dX);
-	if (original_energy >= H )
-                return -original_energy/T;
+	double original_log_prob = OriginalModel->log_prob_raw(x, dX);
+	if (original_log_prob <= -H )
+                return original_log_prob/T;
         else
                 return -H/T;
 }
 
-double CBoundedModel::draw(double *y, int dY, bool &if_new_sample, const gsl_rng *r, int B)
+double CBoundedModel::draw_raw(double *y, int dY, bool &if_new_sample, const gsl_rng *r, int B) const
 {
-	double log_prob_y = OriginalModel->draw(y, dY, if_new_sample, r, B);
+	double log_prob_y = OriginalModel->draw_raw(y, dY, if_new_sample, r, B);
 	double log_prob_y_bounded = (log_prob_y < -H ? log_prob_y : -H)/T; 
 	return log_prob_y_bounded; 
 }
 
-CSampleIDWeight CBoundedModel::draw(bool &if_new_sample, const gsl_rng *r, int B)
+CSampleIDWeight CBoundedModel::draw(bool &if_new_sample, const gsl_rng *r, int B) const
 {
 	CSampleIDWeight y = OriginalModel->draw(if_new_sample, r, B); 
+	// At this point: 
+	// y.weight = OriginalModel.energy(y); 
+	// y.log_prob = OriginalModel.log_prob(y)
 	y.log_prob = (y.log_prob < -H ? y.log_prob : -H)/T; 
+	// Now:
+	// y.log_prob is bounded
+	// y.weight = OriginalModel.energy(y); 
 	return y; 
 }
 
-void CBoundedModel::GetMode(double *x, int nX, int iMode)
+void CBoundedModel::GetMode_raw(double *x, int nX, int iMode) const
 {
-	OriginalModel->GetMode(x, nX, iMode); 
+	OriginalModel->GetMode_raw(x, nX, iMode); 
 }

@@ -12,6 +12,11 @@ CUniformModel::CUniformModel(int nD):CModel(nD, nD*2)
 	{
 		lower_bound = new double[nData]; 
 		upper_bound = new double[nData]; 
+		for (int i=0; i<nData; i++)
+		{
+			lower_bound[i] = 0.0; 
+			upper_bound[i] = 1.0; 
+		}
 	}
 	else 
 	{
@@ -26,9 +31,20 @@ CUniformModel::CUniformModel(int nD, const double *a, const double *b):CModel(nD
 	{
 		lower_bound = new double[nData]; 
 		upper_bound = new double[nData]; 
-
-		memcpy(lower_bound, a, nData*sizeof(double)); 
-		memcpy(upper_bound, b, nData*sizeof(double));
+		if (a == NULL)
+		{
+			for (int i=0; i<nData; i++)
+				lower_bound[i] = 0.0; 
+		}
+		else 
+			memcpy(lower_bound, a, nData*sizeof(double)); 
+		if (b == NULL)
+		{
+			for (int i=0; i<nData; i++)
+				upper_bound[i] = 1.0; 
+		}
+		else 
+			memcpy(upper_bound, b, nData*sizeof(double));
 	}
 	else 
 	{
@@ -58,7 +74,12 @@ void CUniformModel::SetDataDimension(int _dim)
 		}
 		lower_bound = new double[_dim]; 
 		upper_bound = new double[_dim]; 
-		nData = _dim; 	
+		nData = _dim;
+		for (int i=0; i<nData; i++)
+                {
+                        lower_bound[i] = 0.0;
+                        upper_bound[i] = 1.0;
+                }
 	}
 }
 
@@ -74,7 +95,7 @@ void CUniformModel::SetUpperBoundParameter(const double *b, int nD)
 	memcpy(upper_bound, b, nD*sizeof(double)); 
 }
 
-double CUniformModel::log_prob(const double *x, int nX)
+double CUniformModel::log_prob_raw(const double *x, int nX) const
 {
 	// return log(probability(x,nX)); 
 	double logP = 0; 
@@ -88,7 +109,7 @@ double CUniformModel::log_prob(const double *x, int nX)
 	return logP; 
 }
 
-double CUniformModel::draw(double *y, int nY, bool &if_new_sample, const gsl_rng *r, int B)
+double CUniformModel::draw_raw(double *y, int nY, bool &if_new_sample, const gsl_rng *r, int B) const 
 {
 	for (int n=0; n<=B; n++)
 	{
@@ -96,10 +117,10 @@ double CUniformModel::draw(double *y, int nY, bool &if_new_sample, const gsl_rng
 			y[i] = gsl_rng_uniform(r)*(upper_bound[i]-lower_bound[i])+lower_bound[i]; 
 	}
 	if_new_sample = true; 
-	return log_prob(y, nY); 
+	return log_prob_raw(y, nY); 
 }
 
-void CUniformModel::GetMode(double *x, int nX, int iModel)
+void CUniformModel::GetMode_raw(double *x, int nX, int iModel) const
 {
 	if (iModel == 0)
 		memcpy(x, lower_bound, nX*sizeof(double)); 
