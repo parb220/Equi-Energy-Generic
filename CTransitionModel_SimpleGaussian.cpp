@@ -34,53 +34,55 @@ void CTransitionModel_SimpleGaussian::set_step_size(double _s, int _dim)
 double CTransitionModel_SimpleGaussian::get_step_size(int _dim) const
 {
 	if (_dim <0 || _dim >= nData)
-		return GetSigmaParameter(0); 
+		return sigma[0]; 
 	else 
-		return GetSigmaParameter(_dim); 
+		return sigma[_dim]; 
 }
 
-void CTransitionModel_SimpleGaussian:: Tune(double targetAcc, int LPeriod, int NPeriod, const gsl_rng *r, CModel *targetModel, CSampleIDWeight &xStart, int offsetX, int sizeX)
+void CTransitionModel_SimpleGaussian:: Tune(double targetAcc, int LPeriod, int NPeriod, const gsl_rng *r, const CModel *targetModel, const CSampleIDWeight &xStart, int offsetX, int sizeX)
 {
-	for (int offsetP=0; offsetP<sizeX; offsetP++)
-		TuneDimension(targetAcc, LPeriod, NPeriod, r, targetModel, xStart, offsetX+offsetP, offsetP); 
-}
+	CTransitionModel_SimpleGaussian proposal_dimension(1); 
 
-void CTransitionModel_SimpleGaussian:: TuneDimension(double targetAcc, int LPeriod, int NPeriod, const gsl_rng *r, CModel *targetModel, CSampleIDWeight &xStart, int offsetX, int offsetP)
-{
-	double initialSigma = this->get_step_size(offsetP); 
-	CTransitionModel *proposal_dimension = new CTransitionModel_SimpleGaussian(1, &initialSigma); 
 	CSampleIDWeight x_current, x_new; 
 	x_current.SetDataDimension(xStart.GetDataDimension()); 
 	x_new.SetDataDimension(xStart.GetDataDimension()); 
-	
-	int nAccepted=0; 
+
+	CSampleIDWeight partial_x_current, partial_x_new; 
+	partial_x_current.SetDataDimension(1); 
+	partial_x_new.SetDataDimension(1); 
+
 	bool if_new_sample; 
-	MHAdaptive *adaptive = new MHAdaptive(targetAcc, initialSigma); 
-	
-	for (int iPeriod=0; iPeriod<NPeriod; iPeriod++)
-	{
-		// always start from xStart
-		x_current = xStart; 
+	int nAccepted; 
+	double log_uniform_draw; 
+	MHAdaptive *adaptive; 
 
-		nAccepted = 0; 
-
-		// draw LPeriod times to estimate acceptance rate
-		for (int t=0; t<LPeriod; t++)
-		{
-			targetModel->draw_block(x_new, offsetX, 1, proposal_dimension, if_new_sample, r, x_current); 
-			if (if_new_sample)
-			{
-				nAccepted ++; 
-				x_current = x_new; 
+	for (int offsetP=0; offsetP<sizeX; offsetP++)
+	{	// dimension by dimension
+		proposal_dimension.set_step_size(this->get_step_size(offsetP)); 
+		adaptive = new MHAdaptive(targetAcc, this->get_step_size(offsetP)); 
+		for (int iPeriod = 0; iPeriod<NPeriod; iPeriod ++)
+		{	// a total of nPeriod of tuning
+			x_current = x_new = xStart; 
+			partial_x_current.PartialCopyFrom(0, x_current, offsetX+offsetP, 1); 
+			nAccepted = 0; 
+			for (int t=0; t<LPeriod; t++)	
+			{	// observing for LPeriod duration
+				proposal_dimension.draw(partial_x_new, if_new_sample, r, partial_x_current); 
+				x_new.PartialCopyFrom(offsetX+offsetP, partial_x_new, 0, 1); 
+				targetModel->log_prob(x_new); 
+				log_uniform_draw = log(gsl_rng_uniform(r)); 
+				if (log_uniform_draw <= x_new.log_prob - x_current.log_prob) 
+				{
+					x_current = x_new; 
+					partial_x_current = partial_x_new; 
+					nAccepted ++; 
+				}
 			}
+			if (adaptive->UpdateScale(LPeriod, nAccepted)) 
+				proposal_dimension.set_step_size(adaptive->GetScale()); 
 		}
-
-		// Tune 
-		if (adaptive->UpdateScale(LPeriod, nAccepted))
-			proposal_dimension->set_step_size(adaptive->GetScale()); 
+		this->set_step_size(adaptive->GetBestScale(), offsetP); 
+		delete adaptive; 
 	}	
-	this->set_step_size(adaptive->GetBestScale(), offsetP); 
-	delete adaptive; 
-	delete proposal_dimension; 
 }
 

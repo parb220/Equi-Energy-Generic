@@ -16,13 +16,13 @@ double CModel::energy(CSampleIDWeight &x) const
 
 // Multiiple-try Metropolis
 
-void CModel::draw(CSampleIDWeight &y, CTransitionModel *transition_model, bool &new_sample_flag, const gsl_rng *r, const CSampleIDWeight &x, int B) const 
+void CModel::draw(CSampleIDWeight &y, const CTransitionModel *transition_model, bool &new_sample_flag, const gsl_rng *r, const CSampleIDWeight &x, int B) const 
 {
 	y.SetDataDimension(x.GetDataDimension()); 
 	draw_block(y, 0, x.GetDataDimension(), transition_model, new_sample_flag, r, x, B); 
 }
 
-void CModel::draw(CSampleIDWeight &y, CTransitionModel **proposal, vector <bool> &new_sample_flag, const gsl_rng *r, const CSampleIDWeight &x, int nBlock, const vector < int> &blockSize, int mMH) const
+void CModel::draw(CSampleIDWeight &y, const CTransitionModel * const *proposal, vector <bool> &new_sample_flag, const gsl_rng *r, const CSampleIDWeight &x, int nBlock, const vector < int> &blockSize, int mMH) const
 {
 	CSampleIDWeight x_hold = x; 
 	y.SetDataDimension(x.GetDataDimension()); 
@@ -39,7 +39,7 @@ void CModel::draw(CSampleIDWeight &y, CTransitionModel **proposal, vector <bool>
 	}
 }
 
-void CModel::draw_block(CSampleIDWeight &y, int dim_lum_sum, int block_size, CTransitionModel *proposal, bool &new_sample_flag, const gsl_rng *r, const CSampleIDWeight &x, int mMH) const
+void CModel::draw_block(CSampleIDWeight &y, int dim_lum_sum, int block_size, const CTransitionModel *proposal, bool &new_sample_flag, const gsl_rng *r, const CSampleIDWeight &x, int mMH) const
 {
 	// only [dim_lum_sum, dim_lum_sum+block_size) needs to be updated
 	// the other dimensions will keep x's

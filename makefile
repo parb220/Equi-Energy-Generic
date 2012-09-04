@@ -1,5 +1,5 @@
-SOURCES = CMixtureModel.cpp CModel.cpp CSimpleGaussianModel.cpp CTransitionModel_SimpleGaussian.cpp CUniformModel.cpp CBoundedModel.cpp AddScaledLogs.cpp
-OBJS = CMixtureModel.o CModel.o CSimpleGaussianModel.o CTransitionModel_SimpleGaussian.o CUniformModel.o CBoundedModel.o AddScaledLogs.o
+SOURCES = CMixtureModel.cpp CModel.cpp CSimpleGaussianModel.cpp CTransitionModel_SimpleGaussian.cpp CUniformModel.cpp CBoundedModel.cpp AddScaledLogs.cpp CGaussianModel.cpp CTransitionModel_Gaussian.cpp
+OBJS = CMixtureModel.o CModel.o CSimpleGaussianModel.o CTransitionModel_SimpleGaussian.o CUniformModel.o CBoundedModel.o AddScaledLogs.o CGaussianModel.o CTransitionModel_Gaussian.o
 #EXECUTABLE = test_gaussian_mixture
 
 CPP = gcc

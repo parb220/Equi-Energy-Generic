@@ -78,7 +78,6 @@ void CSimpleGaussianModel::SetDataDimension(int _dim)
                         mu[i] = 0.0;
                         sigma[i] = 1.0; 
                 }
-
 	}
 }
 
