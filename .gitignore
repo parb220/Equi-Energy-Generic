@@ -1,7 +1,8 @@
 *.o
 *.[0-9]
-*.mean
-*.sigma
-*.weight
-*.bak
+*.mean*
+*.sigma*
+*.weight*
+*.bak*
+*.covariance*
 test_gaussian_mixture
