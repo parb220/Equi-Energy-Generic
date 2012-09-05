@@ -198,6 +198,7 @@ void CGaussianModel::draw(CSampleIDWeight &y, bool &new_sample_flag, const gsl_r
 
 void CGaussianModel::GetMode(CSampleIDWeight &x, int iMode) const
 {
+	x.SetDataDimension(nData); 
 	CSampleIDWeight x_rotated(mu,nData,0, 0.0);  
 	// mu has been rotated before and has to be rotated back now
 	CSimpleGaussianModel::log_prob(x_rotated);	// directly calls SimpleGaussian::log_prob to calculate log_prob  

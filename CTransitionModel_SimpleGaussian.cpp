@@ -13,7 +13,7 @@ double CTransitionModel_SimpleGaussian::log_prob(const CSampleIDWeight &x, const
 	return CSimpleGaussianModel::log_prob(diff); 
 }
 
-void CTransitionModel_SimpleGaussian::draw(CSampleIDWeight &result, bool &if_new_sample, const gsl_rng *r, const CSampleIDWeight &x, int B) const
+void CTransitionModel_SimpleGaussian::drawMH(CSampleIDWeight &result, bool &if_new_sample, const gsl_rng *r, const CSampleIDWeight &x, int B) const
 {
 	// CSimpleGaussianModel::SetMeanParameter(x, dY); 
 	CSimpleGaussianModel::draw(result, if_new_sample, r, B);
@@ -67,7 +67,7 @@ void CTransitionModel_SimpleGaussian:: Tune(double targetAcc, int LPeriod, int N
 			nAccepted = 0; 
 			for (int t=0; t<LPeriod; t++)	
 			{	// observing for LPeriod duration
-				proposal_dimension.draw(partial_x_new, if_new_sample, r, partial_x_current); 
+				proposal_dimension.drawMH(partial_x_new, if_new_sample, r, partial_x_current); 
 				x_new.PartialCopyFrom(offsetX+offsetP, partial_x_new, 0, 1); 
 				targetModel->log_prob(x_new); 
 				log_uniform_draw = log(gsl_rng_uniform(r)); 

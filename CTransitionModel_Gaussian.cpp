@@ -9,7 +9,7 @@ double CTransitionModel_Gaussian::log_prob(const CSampleIDWeight &x, const CSamp
 	return CGaussianModel::log_prob(diff); 
 }
 
-void CTransitionModel_Gaussian::draw(CSampleIDWeight &result, bool &if_new_sample, const gsl_rng *r, const CSampleIDWeight &x, int mMH) const
+void CTransitionModel_Gaussian::drawMH(CSampleIDWeight &result, bool &if_new_sample, const gsl_rng *r, const CSampleIDWeight &x, int mMH) const
 {
 	CGaussianModel::draw(result, if_new_sample, r, mMH); 
 	result.Add(x); 
@@ -42,24 +42,24 @@ void CTransitionModel_Gaussian::Tune(double targetAcc, int LPeriod, int NPeriod,
 	for (int i=0; i<sizeX*sizeX; i++)
 		sample_variance[i] = 0.0; 
 	// Draw samples
-	CSampleIDWeight xNew, diff; 
+	CSampleIDWeight xNew, xAverage; 
+	xAverage.SetDataDimension(xStart.GetDataDimension()); 
 	int nAccepted = 0; 
 	bool if_new_sample; 
 	for (int n=0; n<LPeriod*NPeriod; n++)
 	{
-		targetModel->draw_block(xNew, offsetX, sizeX, this, if_new_sample, r, xCurrent); 
-		if (if_new_sample)
-		{
-			nAccepted ++;
-			diff = xNew; 
-			diff.Subtract(xCurrent); 
-			for (int i=0; i<sizeX; i++)
-				for (int j=0; j<=i; j++)
-					sample_variance[i*sizeX+j] = sample_variance[j*sizeX+i] = diff[i+offsetX]*diff[j+offsetX]; 
-		}
+		targetModel->drawMH_block(xNew, offsetX, sizeX, this, if_new_sample, r, xCurrent); 
+		xAverage.Add(xNew); 
+		nAccepted ++;
+		for (int i=0; i<sizeX; i++)
+			for (int j=0; j<=i; j++)
+				sample_variance[i*sizeX+j] = sample_variance[j*sizeX+i] = xNew[i+offsetX]*xNew[j+offsetX]; 
 	}
-	for (int i=0; i<sizeX*sizeX; i++)
-		sample_variance[i] = sample_variance[i]/nAccepted; 
+	for (int i=0; i<sizeX; i++)
+	{
+		for (int j=0; j<=i; j++)
+			sample_variance[i*sizeX+j] = sample_variance[j*sizeX+i] = (sample_variance[i]-xAverage[i+offsetX]*xAverage[j+offsetX]/nAccepted)/nAccepted; 
+	}
 	SetCovarianceMatrix(sample_variance, sizeX); 
 	delete [] sample_variance;
 
@@ -87,7 +87,7 @@ void CTransitionModel_Gaussian::Tune(double targetAcc, int LPeriod, int NPeriod,
 			partial_x_current.PartialCopyFrom(0, x_current, offsetX+offsetP, 1); 
 			for (int t=0; t<LPeriod; t++)
 			{ //  observe for LPeriod of length
-				pDimension.draw(partial_x_new, if_new_sample, r, partial_x_current); 
+				pDimension.drawMH(partial_x_new, if_new_sample, r, partial_x_current); 
 		 		x_new.PartialCopyFrom(offsetX+offsetP, partial_x_new, 0, 1); 
 				targetModel->log_prob(x_new); 
 				log_uniform_draw = log(gsl_rng_uniform(r)); 
