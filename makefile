@@ -3,7 +3,8 @@ OBJS = CMixtureModel.o CModel.o CSimpleGaussianModel.o CTransitionModel_SimpleGa
 #EXECUTABLE = test_gaussian_mixture
 
 CPP = gcc
-CPPFLAGS := $(CPPFLAGS) -g -Wall  
+#CPPFLAGS := $(CPPFLAGS) -g -Wall  
+CPPFLAGS := $(CPPFLAFS) -static -O3
 INCLUDE_DIR := $(INCLUDE_DIR) -I/usr/include/gsl -I/home/f1hxw01/equal_energy_hw/include
  
 all : $(OBJS) 
